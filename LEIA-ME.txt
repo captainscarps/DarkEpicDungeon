@@ -1,10 +1,125 @@
-DEPTHGATE — PATCH p127
+DEPTHGATE — PATCH p135
 ======================
 
-Como aplicar: copie o conteúdo desta pasta por cima do jogo
+Como aplicar: copie o conteúdo desta pasta por cima do jogo, substituindo
+também as imagens em assets/pixel-art (forest, characters e ui)
 (DEPTHGATE-WEB-COMPLETO). Pode apagar os .js antigos em assets/
-(os que não terminam em -p127). Recarregue com Ctrl+F5.
-Substitui os patches anteriores (p124/p125/p126) e inclui tudo deles.
+(os que não terminam em -p135). Recarregue com Ctrl+F5.
+Substitui os patches anteriores (p124 a p134) e inclui tudo deles.
+
+NOVO NO p135 — DRUIDA NO LUGAR DO PALADINO
+· A classe Paladino virou Druida (mesmo desbloqueio de antes: ao
+  terminar a campanha com o Mago). Recurso: Natureza (verde).
+· Habilidades (árvore de habilidades):
+    Nível 1  Forma de Urso — 5s: +80% de dano e +4 de defesa.
+    Nível 5  Forma de Pantera — 5s: +60% de velocidade, 35% de chance
+             de esquivar; golpes 15% mais fracos (nunca mais fortes
+             que a arma equipada).
+    Nível 10 Águia Companheira — 30s: voa até itens, poções e ouro no
+             chão (até ~260 px do herói) e coleta para você.
+  As formas duram 5s e recarregam 10s depois de acabarem (recarga
+  total de 15s a partir do uso). Usar uma forma encerra a outra.
+· Visual: sprites do druida, do urso, da pantera e da águia recortados
+  da folha enviada (lado direito, espelhado para a esquerda):
+    characters/paladin-pack-body.png (+ t0 a t4) — druida
+    characters/paladin-bear-body.png — urso
+    characters/paladin-panther-body.png — pantera
+    characters/druid-eagle.png — águia (4 quadros de 96 px)
+    ui/icon-bear-form.png, icon-panther-form.png, icon-eagle.png
+  Os nomes internos continuam "paladin" para não quebrar saves,
+  desbloqueios e mapeamentos; para trocar a arte depois, basta
+  substituir esses PNGs mantendo o mesmo layout (39 quadros de 128 px).
+· Saves antigos de Paladino abrem como Druida, mas mantêm as
+  habilidades de Paladino que já tinham sido desbloqueadas.
+
+NOVO NO p134 — SPRITES CORTADOS NA FLORESTA
+· 15 imagens de árvores e pedras (assets/pixel-art/forest/*-v2.png)
+  tinham pedaços de sprites vizinhos, sobras do recorte da folha
+  original: uma fatia de pinheiro colada ao lado de outra árvore,
+  galhos soltos, pedrinhas flutuando. Os pedaços foram removidos e,
+  onde ficavam sobre a sombra, a sombra foi recomposta.
+    Árvores: fp-tree1/2, fp-autumn1/2/3, fp-burned1/2/3,
+             fp-mega1/2 (-v2)
+    Pedras:  fp-rock1/3/5 limpas; fp-rock2 e fp-rock4 estavam
+             recortadas pela metade e foram trocadas pelas versões
+             limpas de fp-rock1 e fp-rock3.
+· O código do jogo é o mesmo do p133 (bundle -p135.js). O cache do
+  service worker subiu para v1.7.6 para o navegador baixar as
+  imagens novas.
+
+NOVO NO p133 — TOOLTIP COMPLETO E MINIMAPA COM ÍCONES
+· Tooltip do item no chão:
+  - ícone com fundo na cor da raridade, nome, raridade e tipo;
+  - valor em ouro;
+  - atributos com comparação (▲ verde melhora, ▼ vermelho piora);
+  - conjunto (se o item fizer parte de um) e descrição do item;
+  - aviso se a sua classe não pode usar o item.
+  No desktop, o item equipado aparece num segundo cartão compacto
+  logo abaixo, com a etiqueta EQUIPADO. No touch fica um cartão só,
+  com "Equipado: nome" no rodapé, à esquerda para não cobrir o herói.
+· Minimapa: as salas especiais ganharam ícones em pixel art no lugar
+  do quadradinho colorido — chefe (caveira pulsando), tesouro (baú),
+  loja (moeda), santuário (cruz), elite (coroa), evento (?),
+  desafio (espadas), segredo (estrela) e saída (seta).
+
+NOVO NO p132 — TELA DE DERROTA (CAMPANHA)
+· O botão DETALHES foi trocado por VOLTAR AO ÚLTIMO SAVE (destacado).
+  Ele recarrega o save do espaço em uso, do mesmo jeito que CONTINUAR
+  no menu: cenário, herói, itens, estatísticas e dificuldade.
+· Se ainda não existir save nesse espaço, o botão não aparece e
+  TENTAR NOVAMENTE volta a ser o destaque.
+· A barra de atalhos some durante as telas de derrota e vitória.
+· O modo Infinito continua com a tela própria (sem mudança).
+
+NOVO NO p131 — MODO DIFÍCIL NA CAMPANHA
+· Ao escolher NOVO JOGO (depois do espaço de save) aparece a tela
+  DIFICULDADE: NORMAL ou DIFÍCIL. Funciona com mouse, teclado,
+  gamepad e toque.
+· DIFÍCIL: inimigos e chefes com 3x mais dano e 3x mais resistência,
+  em todos os cenários da campanha e na Travessia. Soma-se ao aumento
+  de +25% por cenário.
+· A resistência extra é aplicada como vida 3x maior: com o dano baixo
+  do início do jogo, reduzir o dano recebido em 3x arredondava quase
+  sempre para 1 e não fazia diferença. Com vida 3x, o inimigo leva
+  exatamente 3x mais golpes, e a barra mostra isso (ex.: 6/6).
+· A dificuldade é salva no save e mantida ao CONTINUAR. Saves antigos
+  entram como NORMAL. O modo Infinito não é afetado.
+
+NOVO NO p129/p130
+· Necromante — Exército Esqueleto (nível 15): os 3 esqueletos sempre
+  eram criados, mas nasciam exatamente no mesmo ponto, empilhados, e
+  com o mesmo visual dos esqueletos inimigos — pareciam 1 só (ou
+  nenhum). Agora saem em leque à frente do herói, com tom verde
+  espectral, e nunca nascem dentro da parede.
+· Modo Infinito — PESADELO (refeito no p130): continua a progressão
+  depois do nível 15, que é o nível máximo. A XP segue contando e a
+  barra de XP (vermelha) enche até o próximo Pesadelo, como um nível
+  novo. O medalhão mostra P1, P2, P3…
+    Pesadelo I    +1.500 XP depois do nível 15
+    Pesadelo II   +2.000 XP depois do anterior
+    Pesadelo III  +2.500 … (cada um pede 500 XP a mais)
+  A cada Pesadelo: inimigos 2x mais dano e 2x mais defesa (acumula:
+  P2 = 4x, P3 = 8x), vida cheia e efeito de subir de nível, com aviso
+  na tela. Vale para inimigos e chefes, e se soma ao aumento por
+  profundidade. Só no modo Infinito; na campanha o nível 15 continua
+  sendo o teto.
+  Ajuste: função __nmT no bundle (8200 = XP do nível 15, 1500 = custo
+  do primeiro Pesadelo, 250 = aumento por Pesadelo).
+
+VISUAL (p128)
+· Barra de atalhos (desktop): barras de HP e mana com números e 9
+  espaços com a tecla de cada ação (1–4 habilidades, Q poção, ataque,
+  dash, escudo, interagir). Mostra ícones, recarga e contagem de poções.
+  As teclas acompanham o que estiver configurado nos controles.
+  No touch continua o layout de botões de sempre.
+· Barra de vida com números ("686/1000") sobre todos os inimigos, e
+  número na barra do chefe.
+· Loot Raro, Épico, Lendário e Relíquia: feixe de luz na cor da
+  raridade, visível mesmo no escuro.
+· Tooltip do item no chão ao se aproximar: nome, raridade, atributos e
+  comparação com o equipado (▲ verde melhora, ▼ vermelho piora).
+· Iluminação mais quente: sombra marrom em vez de azulada e brilho
+  maior das tochas.
 
 DANO DOS INIMIGOS POR CENÁRIO (p126, Infinito ajustado no p127)
 · Campanha: +25% por cenário
@@ -33,8 +148,8 @@ No bundle, procure a função __stgMult: 0.25 é o ganho por cenário da
 campanha, a segunda 0.25 é o ganho por profundidade do modo Infinito.
 
 ARQUIVOS
-· index.html · sw.js (cache ded-web-v1.6.1)
-· assets/index-D6qIWtA7-p127.js · assets/ControlsPanel-kYdEPlgz-p127.js
+· index.html · sw.js (cache ded-web-v1.8.0)
+· assets/index-D6qIWtA7-p135.js · assets/ControlsPanel-kYdEPlgz-p135.js
 
 Obs.: patch aplicado no bundle compilado. Leve as mudanças para o
 código-fonte antes do próximo build, senão serão sobrescritas.
