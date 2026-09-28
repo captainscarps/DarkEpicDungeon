@@ -1,11 +1,56 @@
-DEPTHGATE — PATCH p135
+DEPTHGATE — PATCH p137
 ======================
 
 Como aplicar: copie o conteúdo desta pasta por cima do jogo, substituindo
 também as imagens em assets/pixel-art (forest, characters e ui)
 (DEPTHGATE-WEB-COMPLETO). Pode apagar os .js antigos em assets/
-(os que não terminam em -p135). Recarregue com Ctrl+F5.
-Substitui os patches anteriores (p124 a p134) e inclui tudo deles.
+(os que não terminam em -p137). Recarregue com Ctrl+F5.
+Substitui os patches anteriores (p124 a p136) e inclui tudo deles.
+
+NOVO NO p137 — NOVOS SPRITES E O SAMURAI
+· Druida: redesenhado no estilo dos outros heróis (manto verde, gola de
+  folhas, chifres no capuz, cajado de madeira com broto, magia verde),
+  com as 39 poses e as variações de equipamento t0–t4.
+· Forma de Urso -> FORMA DE JAVALI (sprite do javali selvagem enviado,
+  reduzido para a escala dos heróis, paleta única e contorno escuro).
+  Mesmos efeitos: +80% de dano e +4 de defesa por 5s.
+· Forma de Pantera -> FORMA DE LOBISOMEM (sprite enviado, tons rosados
+  corrigidos para um castanho-acinzentado natural). Mesmos efeitos:
+  +60% de velocidade e 35% de esquiva por 5s.
+· Caçador: novo sprite (chapéu de palha e manto de feno). A zarabatana
+  dispara dardos (proj-dart) no lugar da flecha; a defesa mostra o
+  disfarce de monte de feno.
+· Berserker -> SAMURAI: novo sprite com katana, recurso "Espírito"
+  (enche batendo, como a Fúria) e habilidades novas:
+    Nível 1  Iaijutsu — saque relâmpago, corte longo e reto (3,4x).
+    Nível 5  Kiai — +25% de crítico e +3 de dano por 5s.
+             Postura Mikiri — +10 de defesa por 4s.
+    Nível 10 Corte do Vento — avança cortando tudo no caminho (2,2x).
+             Redemoinho de Lâminas — giro que acerta ao redor (1,8x).
+    Nível 15 Kaishaku — golpe de misericórdia: 5x contra inimigos com
+             menos de 35% de vida.
+· Todos os sprites: alinhados pelos pés (mesma linha de chão em todos
+  os quadros), centralizados, alfa limpo (sem franja semitransparente
+  nem pixels soltos) e contorno escuro completado onde faltava.
+· Saves antigos de Berserker abrem como Samurai, mas mantêm as
+  habilidades de Berserker já desbloqueadas.
+
+NOVO NO p136 — SPRITES DO DRUIDA REFEITOS (substituídos no p137)
+· Fundo xadrez removido com limpeza de borda: sem halo branco.
+· Arte refeita no tamanho exato em que aparece na tela (1 pixel da arte
+  = 1 pixel do jogo), sem reamostragem na hora de desenhar, então o
+  contorno escuro fica contínuo em todos os quadros.
+· Paleta reduzida por forma (druida 28 cores, urso 26, pantera 20,
+  águia 24), contorno escuro de 1 px na cor de cada forma e brilhos
+  estourados do druida suavizados.
+· Animação: respiração de 1 px no parado (só a parte de cima do corpo
+  se move), balanço na caminhada/corrida, quadros alinhados pelo centro
+  do corpo para não "tremer". O urso parado agora fica de lado.
+· Águia redesenhada no mesmo padrão (quadros de 48 px, escala 1).
+· Ícones novos das habilidades: medalhões redondos com a cabeça do
+  urso, da pantera e a águia.
+· paladin-pack.json agora usa "scale": 1.0 (necessário para o novo
+  tamanho dos sprites).
 
 NOVO NO p135 — DRUIDA NO LUGAR DO PALADINO
 · A classe Paladino virou Druida (mesmo desbloqueio de antes: ao
@@ -24,11 +69,12 @@ NOVO NO p135 — DRUIDA NO LUGAR DO PALADINO
     characters/paladin-pack-body.png (+ t0 a t4) — druida
     characters/paladin-bear-body.png — urso
     characters/paladin-panther-body.png — pantera
-    characters/druid-eagle.png — águia (4 quadros de 96 px)
+    characters/druid-eagle.png — águia (4 quadros de 48 px)
     ui/icon-bear-form.png, icon-panther-form.png, icon-eagle.png
   Os nomes internos continuam "paladin" para não quebrar saves,
   desbloqueios e mapeamentos; para trocar a arte depois, basta
-  substituir esses PNGs mantendo o mesmo layout (39 quadros de 128 px).
+  substituir esses PNGs mantendo o mesmo layout (39 quadros de 128 px,
+  personagem com ~45 px de altura, pés na linha 119).
 · Saves antigos de Paladino abrem como Druida, mas mantêm as
   habilidades de Paladino que já tinham sido desbloqueadas.
 
@@ -43,7 +89,7 @@ NOVO NO p134 — SPRITES CORTADOS NA FLORESTA
     Pedras:  fp-rock1/3/5 limpas; fp-rock2 e fp-rock4 estavam
              recortadas pela metade e foram trocadas pelas versões
              limpas de fp-rock1 e fp-rock3.
-· O código do jogo é o mesmo do p133 (bundle -p135.js). O cache do
+· O código do jogo é o mesmo do p133 (bundle -p137.js). O cache do
   service worker subiu para v1.7.6 para o navegador baixar as
   imagens novas.
 
@@ -148,8 +194,8 @@ No bundle, procure a função __stgMult: 0.25 é o ganho por cenário da
 campanha, a segunda 0.25 é o ganho por profundidade do modo Infinito.
 
 ARQUIVOS
-· index.html · sw.js (cache ded-web-v1.8.0)
-· assets/index-D6qIWtA7-p135.js · assets/ControlsPanel-kYdEPlgz-p135.js
+· index.html · sw.js (cache ded-web-v1.9.0)
+· assets/index-D6qIWtA7-p137.js · assets/ControlsPanel-kYdEPlgz-p137.js
 
 Obs.: patch aplicado no bundle compilado. Leve as mudanças para o
 código-fonte antes do próximo build, senão serão sobrescritas.
