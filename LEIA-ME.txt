@@ -1,11 +1,23 @@
-DEPTHGATE — PATCH p141
+DEPTHGATE — PATCH p142
 ======================
 
 Como aplicar: copie o conteúdo desta pasta por cima do jogo, substituindo
 também as imagens em assets/pixel-art (forest, characters, ui, hub, bosses e traversal)
 (DEPTHGATE-WEB-COMPLETO). Pode apagar os .js antigos em assets/
-(os que não terminam em -p141). Recarregue com Ctrl+F5.
-Substitui os patches anteriores (p124 a p140) e inclui tudo deles.
+(os que não terminam em -p142). Recarregue com Ctrl+F5.
+Substitui os patches anteriores (p124 a p141) e inclui tudo deles.
+
+NOVO NO p142 — DIFICULDADE EM TODO JOGO NOVO
+· A escolha NORMAL / DIFÍCIL agora aparece na tela de escolha de
+  classe, ao confirmar a classe. Como todo jogo novo passa por essa
+  tela, ela vale para: NOVO JOGO da campanha, TENTAR NOVAMENTE depois
+  de uma derrota e o MODO INFINITO. (Saiu do menu principal para não
+  perguntar duas vezes.)
+· Teclado/gamepad: setas trocam a opção, Enter confirma, Esc volta
+  para a escolha de classe. Mouse/toque: clique na opção.
+· Modo Infinito no DIFÍCIL: inimigos e chefes com 3x dano e 3x vida,
+  somando-se ao aumento por profundidade e ao Pesadelo. A escolha fica
+  gravada na partida do Infinito.
 
 NOVO NO p141 — VENDEDOR RECEBE O HERÓI
 · Quando o herói chega perto do vendedor (loja da masmorra ou Refúgio),
@@ -158,7 +170,7 @@ NOVO NO p134 — SPRITES CORTADOS NA FLORESTA
     Pedras:  fp-rock1/3/5 limpas; fp-rock2 e fp-rock4 estavam
              recortadas pela metade e foram trocadas pelas versões
              limpas de fp-rock1 e fp-rock3.
-· O código do jogo é o mesmo do p133 (bundle -p141.js). O cache do
+· O código do jogo é o mesmo do p133 (bundle -p142.js). O cache do
   service worker subiu para v1.7.6 para o navegador baixar as
   imagens novas.
 
@@ -187,8 +199,7 @@ NOVO NO p132 — TELA DE DERROTA (CAMPANHA)
 · O modo Infinito continua com a tela própria (sem mudança).
 
 NOVO NO p131 — MODO DIFÍCIL NA CAMPANHA
-· Ao escolher NOVO JOGO (depois do espaço de save) aparece a tela
-  DIFICULDADE: NORMAL ou DIFÍCIL. Funciona com mouse, teclado,
+· (p142: a tela DIFICULDADE passou para a escolha de classe) Funciona com mouse, teclado,
   gamepad e toque.
 · DIFÍCIL: inimigos e chefes com 3x mais dano e 3x mais resistência,
   em todos os cenários da campanha e na Travessia. Soma-se ao aumento
@@ -263,8 +274,8 @@ No bundle, procure a função __stgMult: 0.25 é o ganho por cenário da
 campanha, a segunda 0.25 é o ganho por profundidade do modo Infinito.
 
 ARQUIVOS
-· index.html · sw.js (cache ded-web-v1.11.1)
-· assets/index-D6qIWtA7-p141.js · assets/ControlsPanel-kYdEPlgz-p141.js
+· index.html · sw.js (cache ded-web-v1.11.2)
+· assets/index-D6qIWtA7-p142.js · assets/ControlsPanel-kYdEPlgz-p142.js
 
 Obs.: patch aplicado no bundle compilado. Leve as mudanças para o
 código-fonte antes do próximo build, senão serão sobrescritas.
