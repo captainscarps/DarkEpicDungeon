@@ -1,11 +1,31 @@
-DEPTHGATE — PATCH p143
+DEPTHGATE — PATCH p144
 ======================
 
 Como aplicar: copie o conteúdo desta pasta por cima do jogo, substituindo
 também as imagens em assets/pixel-art (forest, characters, ui, hub, bosses e traversal)
 (DEPTHGATE-WEB-COMPLETO). Pode apagar os .js antigos em assets/
-(os que não terminam em -p143). Recarregue com Ctrl+F5.
-Substitui os patches anteriores (p124 a p142) e inclui tudo deles.
+(os que não terminam em -p144). Recarregue com Ctrl+F5.
+Substitui os patches anteriores (p124 a p143) e inclui tudo deles.
+
+NOVO NO p144 — TELAS DE SELEÇÃO REDESENHADAS
+· ESCOLHA DE CLASSE (referência Diablo III): lista de classes à esquerda
+  em placas; a selecionada fica em vermelho/âmbar com setas nas
+  laterais; bloqueadas com cadeado. No centro, o herói grande sobre o
+  fundo animado, com luz na cor da classe, e um golpe de apresentação
+  ao trocar de classe (bloqueadas aparecem em silhueta, com o que falta
+  para liberar). À direita: nome na cor da classe, recurso, descrição,
+  3 destaques, barras de Vida/Dano/Defesa/Velocidade e as 3 primeiras
+  habilidades com ícone. Botão COMEÇAR com pincelada e atalhos no
+  rodapé. Setas ↑↓ (ou ←→) navegam; clicar na classe já selecionada
+  começa.
+· ESPAÇOS DE SAVE (referência Hades): moldura ornamentada com título
+  espaçado; um cartão por espaço lado a lado, com o herói animado,
+  LOCAL, HERÓI/NÍVEL (ou profundidade/pontos no Infinito) e ÚLTIMO SAVE;
+  o selecionado ganha borda dourada dupla e cantos; APAGAR embaixo do
+  cartão.
+· PAUSA (referência Hades): moldura ornamentada com emblema, título
+  "P A U S A D O" espaçado, opções centralizadas; a selecionada fica
+  verde-água, maior e com marcadores ◆ dos dois lados.
 
 NOVO NO p143 — NOVA TELA INICIAL E TELAS DE SELEÇÃO
 · Tela inicial redesenhada no estilo da referência: pôr do sol sobre a
@@ -184,7 +204,7 @@ NOVO NO p134 — SPRITES CORTADOS NA FLORESTA
     Pedras:  fp-rock1/3/5 limpas; fp-rock2 e fp-rock4 estavam
              recortadas pela metade e foram trocadas pelas versões
              limpas de fp-rock1 e fp-rock3.
-· O código do jogo é o mesmo do p133 (bundle -p143.js). O cache do
+· O código do jogo é o mesmo do p133 (bundle -p144.js). O cache do
   service worker subiu para v1.7.6 para o navegador baixar as
   imagens novas.
 
@@ -288,8 +308,8 @@ No bundle, procure a função __stgMult: 0.25 é o ganho por cenário da
 campanha, a segunda 0.25 é o ganho por profundidade do modo Infinito.
 
 ARQUIVOS
-· index.html · sw.js (cache ded-web-v1.12.0)
-· assets/index-D6qIWtA7-p143.js · assets/ControlsPanel-kYdEPlgz-p143.js
+· index.html · sw.js (cache ded-web-v1.12.1)
+· assets/index-D6qIWtA7-p144.js · assets/ControlsPanel-kYdEPlgz-p144.js
 
 Obs.: patch aplicado no bundle compilado. Leve as mudanças para o
 código-fonte antes do próximo build, senão serão sobrescritas.
