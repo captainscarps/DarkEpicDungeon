@@ -1,11 +1,43 @@
-DEPTHGATE — PATCH p139
+DEPTHGATE — PATCH p141
 ======================
 
 Como aplicar: copie o conteúdo desta pasta por cima do jogo, substituindo
 também as imagens em assets/pixel-art (forest, characters, ui, hub, bosses e traversal)
 (DEPTHGATE-WEB-COMPLETO). Pode apagar os .js antigos em assets/
-(os que não terminam em -p139). Recarregue com Ctrl+F5.
-Substitui os patches anteriores (p124 a p138) e inclui tudo deles.
+(os que não terminam em -p141). Recarregue com Ctrl+F5.
+Substitui os patches anteriores (p124 a p140) e inclui tudo deles.
+
+NOVO NO p141 — VENDEDOR RECEBE O HERÓI
+· Quando o herói chega perto do vendedor (loja da masmorra ou Refúgio),
+  ele se vira para o herói e faz a animação de conversa/saudação.
+  Só repete depois que o herói se afasta e volta. Enquanto isso, ele
+  acompanha o herói com o olhar (vira para o lado em que ele está).
+
+NOVO NO p140
+· TRAVESSIA: voltou a usar o herói da classe escolhida (o espírito azul
+  saiu). Agora com mais quadros dele:
+    dano em 2 quadros (antes o quadro de dano sumia na hora),
+    dash em 2 tempos, agachar em 2 tempos, morte em 3 quadros,
+    e as classes de ataque à distância (Mago, Necromante, Bruxo,
+    Arqueiro, Caçador, Druida...) usam os quadros de conjurar ao atacar.
+  O cenário Ilhas do Céu, as fadas e as plantas predadoras continuam.
+· TRAVESSIA — INIMIGOS COM REAÇÃO FÍSICA: ao levar golpe, o inimigo
+  pisca branco, toca a animação de dano, é arremessado para trás e um
+  pouco para cima (terrestres) ou empurrado no ar (voadores), fica
+  atordoado ~0,3s e é interrompido se estava preparando ataque. Há
+  faíscas, um tremor leve de câmera e uma micro-pausa no impacto.
+· DRUIDA — 3 HABILIDADES NOVAS DE NATUREZA:
+    Nível 5  Raízes Enredantes — dano em área à frente e deixa os
+             inimigos bem lentos por 3,5s.
+    Nível 10 Rajada de Espinhos — 5 espinhos em leque.
+    Nível 15 Fúria da Natureza — marca uma área; depois de um instante
+             cai uma tempestade de folhas e espinhos (3,8x).
+· DRUIDA — ITENS: pode equipar cajados e não usa mais escudo. Começa
+  com cajado; o ataque e as formas usam o Dano Mágico (o que o cajado
+  aumenta).
+· PORTAL: corrigido o portal que sumia quando o save era carregado
+  depois de limpar todas as salas. Ao carregar, se o nível já estiver
+  concluído, o portal (e o vendedor) reaparecem na sala do chefe.
 
 NOVO NO p139 — TRAVESSIA: PLANTAS PREDADORAS E ESPINHOS
 · Ilhas do Céu: plantas predadoras animadas em algumas plataformas.
@@ -30,7 +62,7 @@ NOVO NO p138 — VENDEDOR, CHEFES E TRAVESSIA
   andar, preparar golpe, golpe, fase 2, dano e morte.
   O Guardião do Gelo e o Dragão continuam como estavam.
   (bosses/boss-minotaur.png, bosses/boss-gorgon.png)
-· TRAVESSIA — HERÓI ÚNICO: a travessia agora usa sempre o personagem
+· (removido no p140) TRAVESSIA — HERÓI ÚNICO: a travessia agora usa sempre o personagem
   enviado (espírito azul), qualquer que seja a classe, com os próprios
   movimentos (parado, andar, correr, pular, cair, rolar, agachar,
   morrer) e o próprio ataque: a Flecha Mágica, um disparo verde que
@@ -126,7 +158,7 @@ NOVO NO p134 — SPRITES CORTADOS NA FLORESTA
     Pedras:  fp-rock1/3/5 limpas; fp-rock2 e fp-rock4 estavam
              recortadas pela metade e foram trocadas pelas versões
              limpas de fp-rock1 e fp-rock3.
-· O código do jogo é o mesmo do p133 (bundle -p139.js). O cache do
+· O código do jogo é o mesmo do p133 (bundle -p141.js). O cache do
   service worker subiu para v1.7.6 para o navegador baixar as
   imagens novas.
 
@@ -231,8 +263,8 @@ No bundle, procure a função __stgMult: 0.25 é o ganho por cenário da
 campanha, a segunda 0.25 é o ganho por profundidade do modo Infinito.
 
 ARQUIVOS
-· index.html · sw.js (cache ded-web-v1.10.1)
-· assets/index-D6qIWtA7-p139.js · assets/ControlsPanel-kYdEPlgz-p139.js
+· index.html · sw.js (cache ded-web-v1.11.1)
+· assets/index-D6qIWtA7-p141.js · assets/ControlsPanel-kYdEPlgz-p141.js
 
 Obs.: patch aplicado no bundle compilado. Leve as mudanças para o
 código-fonte antes do próximo build, senão serão sobrescritas.
