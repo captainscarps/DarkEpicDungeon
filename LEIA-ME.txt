@@ -1,11 +1,25 @@
-DEPTHGATE — PATCH p142
+DEPTHGATE — PATCH p143
 ======================
 
 Como aplicar: copie o conteúdo desta pasta por cima do jogo, substituindo
 também as imagens em assets/pixel-art (forest, characters, ui, hub, bosses e traversal)
 (DEPTHGATE-WEB-COMPLETO). Pode apagar os .js antigos em assets/
-(os que não terminam em -p142). Recarregue com Ctrl+F5.
-Substitui os patches anteriores (p124 a p141) e inclui tudo deles.
+(os que não terminam em -p143). Recarregue com Ctrl+F5.
+Substitui os patches anteriores (p124 a p142) e inclui tudo deles.
+
+NOVO NO p143 — NOVA TELA INICIAL E TELAS DE SELEÇÃO
+· Tela inicial redesenhada no estilo da referência: pôr do sol sobre a
+  floresta em tela cheia, animado (nuvens, duas camadas de árvores em
+  parallax, sol pulsando, reflexo e brilhos no lago, vaga-lumes
+  subindo). Logo no canto superior esquerdo e botões alinhados à
+  esquerda, em maiúsculas, com uma pincelada creme destacando a opção
+  selecionada.
+· Mesmo visual nas telas de seleção: salvar/carregar (espaços de save),
+  Modo Infinito, Hall da Fama, confirmações e escolha de classe com a
+  tela de dificuldade. Os painéis viraram placas escuras translúcidas
+  (o fundo animado aparece por trás) e os botões usam a pincelada.
+· O menu de Opções e o menu do personagem durante o jogo ainda estão no
+  visual antigo (próxima etapa).
 
 NOVO NO p142 — DIFICULDADE EM TODO JOGO NOVO
 · A escolha NORMAL / DIFÍCIL agora aparece na tela de escolha de
@@ -170,7 +184,7 @@ NOVO NO p134 — SPRITES CORTADOS NA FLORESTA
     Pedras:  fp-rock1/3/5 limpas; fp-rock2 e fp-rock4 estavam
              recortadas pela metade e foram trocadas pelas versões
              limpas de fp-rock1 e fp-rock3.
-· O código do jogo é o mesmo do p133 (bundle -p142.js). O cache do
+· O código do jogo é o mesmo do p133 (bundle -p143.js). O cache do
   service worker subiu para v1.7.6 para o navegador baixar as
   imagens novas.
 
@@ -274,8 +288,8 @@ No bundle, procure a função __stgMult: 0.25 é o ganho por cenário da
 campanha, a segunda 0.25 é o ganho por profundidade do modo Infinito.
 
 ARQUIVOS
-· index.html · sw.js (cache ded-web-v1.11.2)
-· assets/index-D6qIWtA7-p142.js · assets/ControlsPanel-kYdEPlgz-p142.js
+· index.html · sw.js (cache ded-web-v1.12.0)
+· assets/index-D6qIWtA7-p143.js · assets/ControlsPanel-kYdEPlgz-p143.js
 
 Obs.: patch aplicado no bundle compilado. Leve as mudanças para o
 código-fonte antes do próximo build, senão serão sobrescritas.
