@@ -1,26 +1,23 @@
-DEPTHGATE — PATCH p155 (SOMENTE ARQUIVOS NOVOS/ALTERADOS)
+DEPTHGATE — PATCH p156 (SOMENTE ARQUIVOS NOVOS/ALTERADOS)
 
 Copie por cima da pasta do jogo e recarregue com Ctrl+F5.
 
 ARQUIVOS
-  index.html, sw.js                         (alterados; cache ded-web-v1.19.0)
-  assets/index-D6qIWtA7-p155.js             (novo)
-  assets/ControlsPanel-kYdEPlgz-p155.js     (novo)
-  Pode apagar os dois arquivos -p154.js.
+  index.html, sw.js                         (alterados; cache ded-web-v1.19.1)
+  assets/index-D6qIWtA7-p156.js             (novo)
+  assets/ControlsPanel-kYdEPlgz-p156.js     (novo)
+  Pode apagar os dois arquivos -p155.js.
 
-O QUE MUDOU
-· SUPORTE A ULTRAWIDE: em telas mais largas que 16:9 (21:9, 32:9...)
-  o jogo não estica nem coloca faixas pretas: a área visível fica MAIS
-  LARGA (mesma altura), mostrando mais do cenário.
-    16:9  → 640 x 360 (como antes)
-    21:9  → ~860 x 360
-    32:9  → 1280 x 360 (máximo)
-· HUD ajustado para a largura: painel de vida no canto esquerdo,
-  minimapa e informações da sala no canto direito, barra de atalhos no
-  centro, menus e painéis centralizados; a escolha de classe fica
-  centralizada; menu inicial, Refúgio e Travessia ocupam a tela toda.
-· Se a janela mudar de proporção enquanto você está no menu, na
-  escolha de classe ou no Refúgio, o jogo recarrega sozinho para
-  ajustar a largura. Durante uma fase, ele mantém a largura até você
-  voltar ao menu (evita perder a partida).
-· Telas 16:9 ou mais estreitas continuam exatamente como antes.
+CORREÇÕES DO AIM ASSIST
+· O ataque básico à distância é definido pela ARMA (arco, besta,
+  cajado...), mas a mira assistida só era ligada para classes marcadas
+  como "de projétil". Com isso, quem atirava com arma de projétil
+  (ex.: Druida com cajado) ficava sem mira. Agora a mira vale para
+  todo disparo, de qualquer classe.
+· A mira agora é calculada no instante em que o projétil sai (depois
+  da animação de preparo), e não no aperto do botão — andando, o herói
+  já tinha virado para o lado do movimento quando o tiro saía.
+· "Drift" do analógico direito: uma leve folga no analógico direito era
+  tratada como mira manual e desligava a assistência. Agora a mira
+  manual só vale com o analógico direito bem inclinado (acima de 55%).
+· O herói se vira para o alvo ao disparar.
