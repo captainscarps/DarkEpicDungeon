@@ -1,11 +1,48 @@
-DEPTHGATE — PATCH p144
+DEPTHGATE — PATCH p146
 ======================
 
 Como aplicar: copie o conteúdo desta pasta por cima do jogo, substituindo
-também as imagens em assets/pixel-art (forest, characters, ui, hub, bosses e traversal)
+também as imagens em assets/pixel-art e assets/video
 (DEPTHGATE-WEB-COMPLETO). Pode apagar os .js antigos em assets/
-(os que não terminam em -p144). Recarregue com Ctrl+F5.
-Substitui os patches anteriores (p124 a p143) e inclui tudo deles.
+(os que não terminam em -p146). Recarregue com Ctrl+F5.
+Substitui os patches anteriores (p124 a p145) e inclui tudo deles.
+
+NOVO NO p146 — VÍDEOS DE ABERTURA
+· LOGO: ao abrir o jogo, o vídeo da logo toca em tela cheia antes do
+  menu (uma vez por sessão). Surge e some em fade, revelando o menu.
+  Pode ser pulado com qualquer tecla, clique ou toque. Toca sem som:
+  os navegadores bloqueiam áudio antes do primeiro clique.
+· CUTSCENE DA CAMPANHA: a abertura desenhada foi trocada pelos vídeos
+  parte 1 -> parte 2, com transição suave (fusão de ~0,9s entre um e
+  outro), fade de entrada e de saída para o jogo. A música do menu
+  para durante os vídeos. Pular: qualquer tecla, clique ou toque.
+· Arquivos em assets/video/: logo, part_1 e part_2, cada um em .mp4
+  (original) e .webm (cópia para navegadores sem H.264). Para trocar um
+  vídeo, substitua os dois arquivos com o mesmo nome.
+· O service worker não guarda os vídeos em cache (são baixados direto),
+  evitando problemas de reprodução no Safari/iPhone.
+
+NOVO NO p145 — ÍCONES E EFEITOS DAS HABILIDADES
+· 60 ÍCONES NOVOS (todas as habilidades das 10 classes), no mesmo
+  padrão: medalhão com borda chanfrada, fundo em degradê na cor do
+  elemento (aço, fogo, arcano, sombra, necro, natureza, sagrado,
+  sangue, caça, vazio, tempo, samurai), símbolo desenhado com contorno
+  escuro e brilho suave em volta. (assets/pixel-art/ui/icons/*.png —
+  basta trocar o PNG para mudar um ícone.)
+· EFEITOS DAS HABILIDADES, mais vistosos:
+    - projéteis (das habilidades e ataques básicos) com brilho e
+      rastro de luz na cor do projétil;
+    - áreas e explosões (Meteoro, Novas, Raízes, Fúria da Natureza,
+      Redemoinho...): clarão, dois anéis de choque, faíscas, fumaça e
+      tremor de câmera nas maiores;
+    - golpes fortes (Golpe Pesado, Execução, Iaijutsu...): arco de
+      corte luminoso com faíscas na ponta;
+    - avanços (Golpe Sombrio, Corte do Vento, passos): imagens
+      residuais do herói na cor da habilidade;
+    - bônus e formas (Kiai, Muralha, Javali...): aura com anel e
+      faíscas subindo;
+    - invocações (Esqueletos, Águia, Lobo...): portal no chão.
+  Todos os efeitos ficam acima da escuridão das salas.
 
 NOVO NO p144 — TELAS DE SELEÇÃO REDESENHADAS
 · ESCOLHA DE CLASSE (referência Diablo III): lista de classes à esquerda
@@ -204,7 +241,7 @@ NOVO NO p134 — SPRITES CORTADOS NA FLORESTA
     Pedras:  fp-rock1/3/5 limpas; fp-rock2 e fp-rock4 estavam
              recortadas pela metade e foram trocadas pelas versões
              limpas de fp-rock1 e fp-rock3.
-· O código do jogo é o mesmo do p133 (bundle -p144.js). O cache do
+· O código do jogo é o mesmo do p133 (bundle -p146.js). O cache do
   service worker subiu para v1.7.6 para o navegador baixar as
   imagens novas.
 
@@ -308,8 +345,8 @@ No bundle, procure a função __stgMult: 0.25 é o ganho por cenário da
 campanha, a segunda 0.25 é o ganho por profundidade do modo Infinito.
 
 ARQUIVOS
-· index.html · sw.js (cache ded-web-v1.12.1)
-· assets/index-D6qIWtA7-p144.js · assets/ControlsPanel-kYdEPlgz-p144.js
+· index.html · sw.js (cache ded-web-v1.14.0)
+· assets/index-D6qIWtA7-p146.js · assets/ControlsPanel-kYdEPlgz-p146.js
 
 Obs.: patch aplicado no bundle compilado. Leve as mudanças para o
 código-fonte antes do próximo build, senão serão sobrescritas.
