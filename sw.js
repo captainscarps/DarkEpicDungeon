@@ -1,7 +1,7 @@
 // DEPTHGATE — service worker mínimo e seguro contra cache velho:
 // navegação/index = REDE PRIMEIRO (nunca fica preso em versão antiga);
 // assets com hash do Vite = cache primeiro (são imutáveis por nome).
-const CACHE = "ded-web-v1.15.2";
+const CACHE = "ded-web-v1.16.0";
 
 self.addEventListener("install", () => self.skipWaiting());
 
@@ -22,7 +22,7 @@ self.addEventListener("fetch", (e) => {
   const isNav = req.mode === "navigate" || new URL(req.url).pathname.endsWith("/index.html");
   if (isNav) {
     e.respondWith(
-      fetch(req)
+      fetch(req, { cache: "no-cache" })
         .then((res) => {
           const copy = res.clone();
           caches.open(CACHE).then((c) => c.put(req, copy));
@@ -36,7 +36,7 @@ self.addEventListener("fetch", (e) => {
     caches.match(req).then(
       (hit) =>
         hit ||
-        fetch(req).then((res) => {
+        fetch(req, { cache: "no-cache" }).then((res) => {
           if (res.ok) {
             const copy = res.clone();
             caches.open(CACHE).then((c) => c.put(req, copy));
