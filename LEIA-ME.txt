@@ -1,19 +1,19 @@
-DEPTHGATE — PATCH p152 (SOMENTE ARQUIVOS NOVOS/ALTERADOS)
+DEPTHGATE — PATCH p153 (SOMENTE ARQUIVOS NOVOS/ALTERADOS)
 
 Copie por cima da pasta do jogo e recarregue com Ctrl+F5.
 
 ARQUIVOS
-  index.html, sw.js                         (alterados; cache ded-web-v1.17.1)
-  assets/index-D6qIWtA7-p152.js             (novo)
-  assets/ControlsPanel-kYdEPlgz-p152.js     (novo)
-  Pode apagar os dois arquivos -p151.js.
+  index.html, sw.js                          (alterados; cache ded-web-v1.17.2)
+  assets/index-D6qIWtA7-p153.js              (novo)
+  assets/ControlsPanel-kYdEPlgz-p153.js      (novo)
+  assets/video/intro_campanha.mp4 / .webm    (novo)
+  Pode apagar: os dois arquivos -p152.js e os vídeos
+  assets/video/campanha_1.*, campanha_2.*, campanha_3.* (não são mais usados).
 
 O QUE MUDOU
-· Classes retiradas do jogo: LADINO, ASSASSINO DAS SOMBRAS e BRUXO.
-  A escolha de classe agora tem 7: Guerreiro, Arqueiro, Mago,
-  Necromante, Samurai, Caçador e Druida.
-· Desbloqueios: Guerreiro → Samurai, Arqueiro → Caçador e Mago →
-  Druida (como antes). Terminar a campanha com o Necromante não
-  desbloqueia mais nada, porque o Bruxo saiu.
-· Saves antigos feitos com Ladino, Assassino ou Bruxo continuam abrindo
-  normalmente (a classe só deixou de aparecer para novos jogos).
+· A introdução da campanha agora é somente o vídeo novo
+  (intro_campanha), com o som do próprio vídeo e a música de suspense
+  baixa ao fundo, com fade de entrada e saída.
+· As legendas foram retiradas.
+· Ao final continua aparecendo o nome da fase ("FLORESTA DE ELDERVALE")
+  antes de entrar no jogo.
