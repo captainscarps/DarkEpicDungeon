@@ -1,23 +1,25 @@
-DEPTHGATE — PATCH p156 (SOMENTE ARQUIVOS NOVOS/ALTERADOS)
+DEPTHGATE — PATCH p157 (SOMENTE ARQUIVOS NOVOS/ALTERADOS)
 
 Copie por cima da pasta do jogo e recarregue com Ctrl+F5.
 
 ARQUIVOS
-  index.html, sw.js                         (alterados; cache ded-web-v1.19.1)
-  assets/index-D6qIWtA7-p156.js             (novo)
-  assets/ControlsPanel-kYdEPlgz-p156.js     (novo)
-  Pode apagar os dois arquivos -p155.js.
+  index.html, sw.js                         (alterados; cache ded-web-v1.19.2)
+  assets/index-D6qIWtA7-p157.js             (novo)
+  assets/ControlsPanel-kYdEPlgz-p157.js     (novo)
+  Pode apagar os dois arquivos -p156.js.
 
-CORREÇÕES DO AIM ASSIST
-· O ataque básico à distância é definido pela ARMA (arco, besta,
-  cajado...), mas a mira assistida só era ligada para classes marcadas
-  como "de projétil". Com isso, quem atirava com arma de projétil
-  (ex.: Druida com cajado) ficava sem mira. Agora a mira vale para
-  todo disparo, de qualquer classe.
-· A mira agora é calculada no instante em que o projétil sai (depois
-  da animação de preparo), e não no aperto do botão — andando, o herói
-  já tinha virado para o lado do movimento quando o tiro saía.
-· "Drift" do analógico direito: uma leve folga no analógico direito era
-  tratada como mira manual e desligava a assistência. Agora a mira
-  manual só vale com o analógico direito bem inclinado (acima de 55%).
-· O herói se vira para o alvo ao disparar.
+AIM ASSIST NAS HABILIDADES
+· Habilidades de projétil (Bola de Fogo, Tiro Múltiplo, Flecha
+  Perfurante, Flecha Explosiva, Lança de Osso, Rajada de Espinhos...)
+  já miravam no inimigo desde o p154.
+· NOVO: as habilidades de alvo em área e de raio também miram:
+    - Raio Arcano: o raio sai na direção do inimigo;
+    - Meteoro, Fúria da Natureza e demais "marca a área": a área é
+      marcada em cima do inimigo (até 1,5x o alcance normal);
+    - Raízes Enredantes e demais áreas à frente: surgem no inimigo.
+  Funciona andando (mesmo de costas), com teclado, controle ou toque,
+  e o herói se vira para o alvo ao lançar.
+· O Orbe Arcano já dispara sozinho no inimigo mais próximo.
+· Habilidades corpo a corpo, avanços e bônus continuam usando a
+  direção do herói (mira assistida é só para projéteis e magias
+  à distância).
