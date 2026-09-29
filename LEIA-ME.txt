@@ -1,11 +1,75 @@
-DEPTHGATE — PATCH p146
+DEPTHGATE — PATCH p149
 ======================
 
 Como aplicar: copie o conteúdo desta pasta por cima do jogo, substituindo
-também as imagens em assets/pixel-art e assets/video
+também as imagens em assets/pixel-art, assets/video e assets/audio
 (DEPTHGATE-WEB-COMPLETO). Pode apagar os .js antigos em assets/
-(os que não terminam em -p146). Recarregue com Ctrl+F5.
-Substitui os patches anteriores (p124 a p145) e inclui tudo deles.
+(os que não terminam em -p149). Recarregue com Ctrl+F5.
+Substitui os patches anteriores (p124 a p148) e inclui tudo deles.
+
+NOVO NO p149 — BOTÕES DO CONTROLE CERTO E TRAVADAS
+· O jogo identifica o controle conectado pelo nome que o navegador
+  informa e mostra os botões certos em todas as legendas:
+    Xbox / genérico:  A  B  X  Y  LB RB LT RT  VIEW MENU
+    PlayStation:      ✕  ○  □  △  L1 R1 L2 R2  SHARE OPTIONS
+    Nintendo Switch:  B  A  Y  X  L  R  ZL ZR  −  +
+  (no Switch os rótulos seguem a posição física que o navegador usa).
+  Onde aparece: barra de atalhos (com a cor de cada botão no Xbox e
+  PlayStation), aviso de interação ("[✕] Pegar Espada"), rodapé do
+  menu inicial e da escolha de classe, ajuda da pausa, dicas da
+  Travessia e dos tutoriais, e a tela TECLAS E BOTÕES. Troca sozinho ao
+  alternar entre teclado e controle, ou ao trocar de controle.
+· TRAVADAS: não houve vazamento de objetos nem saves pesados (o save
+  tem ~1 KB e grava em 0,04 ms). O que mais pesava eram os efeitos
+  novos, que criavam muitos objetos por segundo. Ajustes:
+    - rastros de projétil gerados a cada 55 ms (antes 32 ms);
+    - faíscas passaram a usar o sistema de partículas do jogo, que
+      reaproveita os objetos;
+    - limite de 140 efeitos temporários ao mesmo tempo;
+    - texturas dos efeitos criadas na abertura do jogo, e não na
+      primeira habilidade usada (tirava um engasgo);
+    - Travessia: trava de segurança da micro-pausa de impacto — se o
+      jogo for pausado bem no instante do golpe, a física não fica
+      mais presa em câmera lenta.
+
+NOVO NO p148 — MÚSICA DE ABERTURA 16-BIT
+· Os vídeos da abertura agora tocam SEM o som original.
+· No lugar, toca uma música de abertura nova, composta para o jogo em
+  estilo 16-bit (timbres de console dos anos 90: ondas pulse,
+  triangular e cordas sintetizadas), em Ré menor, mais sombria:
+  progressão Rém – Si♭ – Solm – Lá, tímpano grave, sinos, arpejo e
+  uma melodia melancólica na segunda metade, com eco. Cerca de 26s,
+  sincronizada com os vídeos e o título da fase; entra e sai em fade e
+  respeita o volume de música das opções.
+· Arquivos: assets/audio/opening.ogg e opening.mp3 (o navegador escolhe
+  o formato). Para trocar a música, substitua os dois.
+· A logo antes do menu continua sem som.
+
+NOVO NO p147 — CUTSCENE COM TEXTOS, DIFICULDADE E ECONOMIA
+· CUTSCENE: legendas com a narração antiga resumida em 5 frases,
+  sincronizadas com os ~20s dos vídeos (surgem e somem em fade). No
+  fim, o título da fase volta a aparecer: "FLORESTA DE ELDERVALE —
+  Capítulo I — a fronteira verde", antes de entrar no jogo. Ao pular,
+  vai direto para o título.
+· DIFICULDADE DA CAMPANHA: agora cresce por cenário, não pelo nível do
+  herói. Antes os inimigos subiam junto com o seu nível e equipamento
+  (então ficar forte não fazia diferença) e a Floresta, cheia de orcs e
+  trolls, era mais difícil que as Catacumbas. Vida média dos inimigos
+  (Normal): Floresta 3,5 · Catacumbas 5 · Ruínas 11 · Glacial 15,9 ·
+  Fortaleza 22,4. O dano cresce na mesma ordem. O bônus de dano por
+  cenário passou de +25% para +15% (vale também para a Travessia),
+  já que agora o próprio cenário define a força dos inimigos.
+· VIDA DO HERÓI: na campanha, cada nível dá 45% menos vida máxima que
+  antes (o Modo Infinito não muda).
+· VENDEDOR: a cada aparição o estoque é sorteado de novo: 5 itens de
+  tipos diferentes, com raridades variadas (sempre pelo menos 2
+  raridades distintas; mais raras nas fases avançadas) e, a partir de
+  Incomum, um bônus extra sorteado (dano, defesa, vida, crítico,
+  velocidade ou dano mágico). Mais 2 poções e, às vezes, um material
+  épico. Ordenado da raridade maior para a menor.
+· MODO INFINITO: ouro ~70% menor (ouro por 100 inimigos: 304 na
+  campanha x 92 no Infinito); itens caem com metade da frequência;
+  itens da loja custam 80% mais e aparecem em raridades mais altas.
 
 NOVO NO p146 — VÍDEOS DE ABERTURA
 · LOGO: ao abrir o jogo, o vídeo da logo toca em tela cheia antes do
@@ -241,7 +305,7 @@ NOVO NO p134 — SPRITES CORTADOS NA FLORESTA
     Pedras:  fp-rock1/3/5 limpas; fp-rock2 e fp-rock4 estavam
              recortadas pela metade e foram trocadas pelas versões
              limpas de fp-rock1 e fp-rock3.
-· O código do jogo é o mesmo do p133 (bundle -p146.js). O cache do
+· O código do jogo é o mesmo do p133 (bundle -p149.js). O cache do
   service worker subiu para v1.7.6 para o navegador baixar as
   imagens novas.
 
@@ -345,8 +409,8 @@ No bundle, procure a função __stgMult: 0.25 é o ganho por cenário da
 campanha, a segunda 0.25 é o ganho por profundidade do modo Infinito.
 
 ARQUIVOS
-· index.html · sw.js (cache ded-web-v1.14.0)
-· assets/index-D6qIWtA7-p146.js · assets/ControlsPanel-kYdEPlgz-p146.js
+· index.html · sw.js (cache ded-web-v1.15.2)
+· assets/index-D6qIWtA7-p149.js · assets/ControlsPanel-kYdEPlgz-p149.js
 
 Obs.: patch aplicado no bundle compilado. Leve as mudanças para o
 código-fonte antes do próximo build, senão serão sobrescritas.
