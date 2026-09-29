@@ -1,25 +1,24 @@
-DEPTHGATE — PATCH p157 (SOMENTE ARQUIVOS NOVOS/ALTERADOS)
+DEPTHGATE — PATCH p158 (SOMENTE ARQUIVOS NOVOS/ALTERADOS)
 
 Copie por cima da pasta do jogo e recarregue com Ctrl+F5.
 
 ARQUIVOS
-  index.html, sw.js                         (alterados; cache ded-web-v1.19.2)
-  assets/index-D6qIWtA7-p157.js             (novo)
-  assets/ControlsPanel-kYdEPlgz-p157.js     (novo)
-  Pode apagar os dois arquivos -p156.js.
+  index.html, sw.js                         (alterados; cache ded-web-v1.19.3)
+  assets/index-D6qIWtA7-p158.js             (novo)
+  assets/ControlsPanel-kYdEPlgz-p158.js     (novo)
+  Pode apagar os dois arquivos -p157.js.
 
-AIM ASSIST NAS HABILIDADES
-· Habilidades de projétil (Bola de Fogo, Tiro Múltiplo, Flecha
-  Perfurante, Flecha Explosiva, Lança de Osso, Rajada de Espinhos...)
-  já miravam no inimigo desde o p154.
-· NOVO: as habilidades de alvo em área e de raio também miram:
-    - Raio Arcano: o raio sai na direção do inimigo;
-    - Meteoro, Fúria da Natureza e demais "marca a área": a área é
-      marcada em cima do inimigo (até 1,5x o alcance normal);
-    - Raízes Enredantes e demais áreas à frente: surgem no inimigo.
-  Funciona andando (mesmo de costas), com teclado, controle ou toque,
-  e o herói se vira para o alvo ao lançar.
-· O Orbe Arcano já dispara sozinho no inimigo mais próximo.
-· Habilidades corpo a corpo, avanços e bônus continuam usando a
-  direção do herói (mira assistida é só para projéteis e magias
-  à distância).
+O QUE MUDOU
+· Configurações > Tela > PROPORÇÃO DA TELA:
+    AUTO  — segue a janela/monitor (padrão, como no p155)
+    16:9  — 640 x 360 (visão clássica)
+    21:9  — 860 x 360 (ultrawide)
+    32:9  — 1280 x 360 (super ultrawide)
+  Em proporção forçada maior que o monitor, o jogo mostra a visão mais
+  larga com faixas pretas em cima e embaixo (sem esticar); menor que o
+  monitor, faixas nas laterais.
+· Ao trocar no menu, na escolha de classe ou no Refúgio, o jogo recarrega
+  sozinho em menos de 1 segundo para aplicar. Durante uma fase, a troca
+  é guardada e aplicada quando você voltar ao menu (para não perder a
+  partida).
+· Opção traduzida nos 8 idiomas.
