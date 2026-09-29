@@ -1,32 +1,26 @@
-DEPTHGATE — PATCH p154 (SOMENTE ARQUIVOS NOVOS/ALTERADOS)
+DEPTHGATE — PATCH p155 (SOMENTE ARQUIVOS NOVOS/ALTERADOS)
 
 Copie por cima da pasta do jogo e recarregue com Ctrl+F5.
 
 ARQUIVOS
-  index.html, sw.js                         (alterados; cache ded-web-v1.18.0)
-  assets/index-D6qIWtA7-p154.js             (novo)
-  assets/ControlsPanel-kYdEPlgz-p154.js     (novo)
-  Pode apagar os dois arquivos -p153.js.
+  index.html, sw.js                         (alterados; cache ded-web-v1.19.0)
+  assets/index-D6qIWtA7-p155.js             (novo)
+  assets/ControlsPanel-kYdEPlgz-p155.js     (novo)
+  Pode apagar os dois arquivos -p154.js.
 
 O QUE MUDOU
-· MIRA ASSISTIDA (AIM ASSIST) para todo projétil — ataques básicos de
-  Arqueiro, Caçador, Mago, Necromante e Druida e todas as habilidades
-  que disparam projéteis (flechas, magias, ossos, espinhos...):
-    - funciona com teclado, controle e toque;
-    - funciona parado ou andando (mesmo de costas para o inimigo);
-    - escolhe o inimigo mais próximo, dando preferência ao que está à
-      frente, até ~320 px;
-    - antecipa o movimento do alvo (mira onde ele vai estar);
-    - o analógico direito (mira manual) continua tendo prioridade;
-    - pode ser desligado em Configurações > Controles > Aim Assist.
-· ANALÓGICO: inclinação leve = ANDAR (velocidade ~35% e animação de
-  caminhada); inclinação total = CORRER (velocidade máxima e animação
-  de corrida). Vale para controle e joystick de toque. No teclado o
-  herói corre.
-· IDIOMAS NOVOS: Deutsch, Русский, 日本語, 中文 e 한국어 (em
-  Configurações > Geral > Idioma; o jogo também detecta o idioma do
-  navegador). Traduzidos: menu inicial, saves, escolha de classe,
-  configurações, pausa, HUD, inventário, atributos, espaços de
-  equipamento, recursos, raridades e nomes das fases. Textos de
-  história, descrições de itens/habilidades e dicas ainda aparecem em
-  inglês nesses idiomas.
+· SUPORTE A ULTRAWIDE: em telas mais largas que 16:9 (21:9, 32:9...)
+  o jogo não estica nem coloca faixas pretas: a área visível fica MAIS
+  LARGA (mesma altura), mostrando mais do cenário.
+    16:9  → 640 x 360 (como antes)
+    21:9  → ~860 x 360
+    32:9  → 1280 x 360 (máximo)
+· HUD ajustado para a largura: painel de vida no canto esquerdo,
+  minimapa e informações da sala no canto direito, barra de atalhos no
+  centro, menus e painéis centralizados; a escolha de classe fica
+  centralizada; menu inicial, Refúgio e Travessia ocupam a tela toda.
+· Se a janela mudar de proporção enquanto você está no menu, na
+  escolha de classe ou no Refúgio, o jogo recarrega sozinho para
+  ajustar a largura. Durante uma fase, ele mantém a largura até você
+  voltar ao menu (evita perder a partida).
+· Telas 16:9 ou mais estreitas continuam exatamente como antes.
