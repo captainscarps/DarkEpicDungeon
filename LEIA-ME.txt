@@ -1,31 +1,44 @@
-DEPTHGATE — PATCH p150 (SOMENTE ARQUIVOS NOVOS/ALTERADOS)
+DEPTHGATE — PATCH p151 (SOMENTE ARQUIVOS NOVOS/ALTERADOS)
 
-Este zip traz apenas o que mudou em relação ao p149. Copie por cima da
-pasta do jogo (DEPTHGATE-WEB-COMPLETO) e recarregue com Ctrl+F5.
+Copie por cima da pasta do jogo (DEPTHGATE-WEB-COMPLETO) e recarregue
+com Ctrl+F5.
 
 ARQUIVOS
-  index.html                                  (alterado — aponta para o p150)
-  sw.js                                       (alterado — cache ded-web-v1.16.0)
-  assets/index-D6qIWtA7-p150.js               (novo — código do jogo)
-  assets/ControlsPanel-kYdEPlgz-p150.js       (novo — tela de controles)
+  index.html, sw.js                         (alterados; cache ded-web-v1.17.0)
+  assets/index-D6qIWtA7-p151.js             (novo — código do jogo)
+  assets/ControlsPanel-kYdEPlgz-p151.js     (novo)
+  assets/video/intro.mp4 / .webm            (novo — abertura do aplicativo)
+  assets/video/modo_infinito.mp4 / .webm    (novo — início do Modo Infinito)
+  assets/video/campanha_1/2/3.mp4 / .webm   (novos — introdução da campanha)
+  assets/audio/music/Music_menu.mp3         (novo)
+  assets/audio/music/dungeon_Exploration.mp3, dungeon_Exploration_2.mp3
+  assets/audio/music/dungeon_boss.mp3, dungeon_boss_2.mp3
 
-  Pode apagar: assets/index-D6qIWtA7-p149.js e
-  assets/ControlsPanel-kYdEPlgz-p149.js (versão anterior, não é mais usada).
-  Opcional: assets/video/logo.mp4 e logo.webm também não são mais usados.
+  Pode apagar: assets/index-D6qIWtA7-p150.js,
+  assets/ControlsPanel-kYdEPlgz-p150.js, e os vídeos antigos
+  assets/video/part_1.*, part_2.*, logo.* (não são mais usados).
 
 O QUE MUDOU
-· Sem vídeo de logo: o jogo abre direto no menu.
-· Áudio ao abrir: o som é liberado no primeiro clique, toque ou tecla
-  (antes o vídeo da logo "segurava" a tecla e o som só vinha depois) e
-  a música entra em ~1s em vez de ~2s.
-· Tela de CONFIGURAÇÕES redesenhada (referência enviada): categorias à
-  esquerda (GERAL, ÁUDIO, TELA, CONTROLES, TOQUE) em faixa vermelha, a
-  categoria ativa com barra de destaque; à direita o título grande e as
-  opções em linhas, com o valor numa caixa; a linha selecionada fica
-  destacada, com setas < >. Q/E (ou Y no controle, ou clique) troca de
-  categoria; ↑↓ escolhe; ←→ ajusta; ESC volta.
-· Personagens bloqueados: conferido — a tela de seleção já usa os
-  sprites novos (Samurai, Caçador, Druida). Se aparecia o visual antigo,
-  era o navegador usando imagens antigas guardadas. O service worker
-  agora sempre confere com o servidor se há arquivo mais novo antes de
-  guardar em cache, então os sprites novos aparecem após atualizar.
+· ABERTURA DO APLICATIVO: tela preta com "CLIQUE OU PRESSIONE QUALQUER
+  TECLA" (os navegadores só liberam som depois de um toque) e, em
+  seguida, o vídeo de introdução COM SOM. Depois o menu abre com a
+  música nova do menu. Pular: tecla, clique ou toque.
+· MODO INFINITO: ao começar um jogo novo no Infinito (depois de escolher
+  a classe e a dificuldade), toca o vídeo do Modo Infinito com som e só
+  então a partida começa.
+· INTRODUÇÃO DA CAMPANHA: os 3 vídeos novos em sequência, com o som dos
+  próprios vídeos, transição suave entre eles (o som do vídeo que sai
+  diminui junto) e a música de suspense bem baixa ao fundo. As legendas
+  e o título da fase ("Floresta de Eldervale") continuam, ajustados aos
+  30 s dos vídeos.
+· MÚSICAS NOVAS no lugar das sintetizadas:
+    Menu, escolha de classe e Refúgio ...... Music_menu
+    Floresta, Ruínas, Fortaleza, Travessia .. dungeon_Exploration
+    Catacumbas, Glacial, Modo Infinito ...... dungeon_Exploration_2
+    Chefes (Minotauro, Górgona) ............. dungeon_boss
+    Chefes (Sentinela do Gelo, Dragão) ...... dungeon_boss_2
+  Tocam em loop, com fade na troca, e seguem o volume de música das
+  opções. Para trocar uma, substitua o MP3 com o mesmo nome.
+· A música de uma fase agora só começa quando a fase começa: nada toca
+  por baixo dos vídeos, e o jogo não inicia mais uma música "padrão"
+  sozinho no primeiro clique.
