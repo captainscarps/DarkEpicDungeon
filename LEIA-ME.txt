@@ -1,28 +1,24 @@
-DEPTHGATE — PATCH p163 (SOMENTE ARQUIVOS NOVOS/ALTERADOS)
+DEPTHGATE — PATCH p165 (SOMENTE ARQUIVOS NOVOS/ALTERADOS)
 
 Copie por cima da pasta do jogo e recarregue com Ctrl+F5.
-(Requer os sprites fr-*.png do p162, que continuam em uso.)
 
 ARQUIVOS
-  index.html, sw.js                          (alterados; cache ded-web-v1.21.1)
-  assets/index-D6qIWtA7-p163.js              (novo)
-  assets/ControlsPanel-kYdEPlgz-p163.js      (novo)
-  assets/pixel-art/forest-open/frb-*.png     (novos — 30 pedaços do mapa pré-desenhado)
-  assets/pixel-art/forest-open/frt-*.png     (novos — 18 árvores da frente)
-  assets/pixel-art/forest-open/frb-meta.json (novo — posição das árvores da frente)
-  Pode apagar os dois arquivos -p162.js.
+  index.html, sw.js                          (alterados; cache ded-web-v1.22.1)
+  assets/index-D6qIWtA7-p165.js              (novo)
+  assets/ControlsPanel-kYdEPlgz-p165.js      (novo)
+  assets/pixel-art/forest-open/frb-*.png     (substituídos — volta o visual do p163)
+  assets/pixel-art/forest-open/frb-meta.json (substituído)
+  assets/pixel-art/forest-open/frt-*.png     (as 18 árvores do p163)
+  Pode apagar: os dois arquivos -p164.js e as árvores do p164
+  (frt-r-*.png, frt-f-*.png e frt-b-*.png).
 
-FLORESTA MAIS FIEL À PRÉVIA
-· O mapa da Floresta de Eldervale agora é pré-desenhado com a mesma
-  técnica da prévia: mata densa com árvores sobrepostas de vários
-  tamanhos e tons, sombras sob as árvores, trilhas de terra contínuas e
-  sinuosas (entre as clareiras e até o centro de cada uma), clareiras
-  com luz mais clara e quente no centro e mata mais escura ao fundo —
-  sem os quadrados escuros de "copa" da versão anterior.
-· As bordas das clareiras ficaram irregulares (a mata avança em
-  pontos aleatórios e nos cantos), com a colisão acompanhando o desenho.
-· As árvores da borda que ficam na frente do herói continuam como
-  sprites separados, então o herói passa por trás delas normalmente.
-· Lago, riacho com ponte e espinheiros continuam como no p162; a margem
-  do lago e do riacho ganhou uma faixa de terra molhada.
-· Bem mais leve: a fase caiu de ~5.000 para ~850 objetos na tela.
+O QUE MUDOU
+· A floresta voltou ao visual do p163 (o anterior), como pedido.
+· O lago da clareira inicial (Despertar) foi redesenhado:
+    - forma arredondada e orgânica, sem cantos quadrados;
+    - água com profundidade (mais clara na margem, azul-escura no meio)
+      e textura de ondas do pack Forgotten Memories;
+    - espuma clara na borda, faixa de areia molhada e pedrinhas em volta;
+    - vitórias-régias (algumas com flor rosa) e juncos na margem;
+    - reflexos de luz que brilham e somem devagar sobre a água.
+· O riacho com ponte e os espinheiros continuam iguais.
