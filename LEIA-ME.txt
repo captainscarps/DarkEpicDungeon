@@ -1,24 +1,35 @@
-DEPTHGATE — PATCH p161 (SOMENTE ARQUIVOS NOVOS/ALTERADOS)
+DEPTHGATE — PATCH p162 (SOMENTE ARQUIVOS NOVOS/ALTERADOS)
 
 Copie por cima da pasta do jogo e recarregue com Ctrl+F5.
 
 ARQUIVOS
-  index.html, sw.js                         (alterados; cache ded-web-v1.20.1)
-  assets/index-D6qIWtA7-p161.js             (novo)
-  assets/ControlsPanel-kYdEPlgz-p161.js     (novo)
-  Pode apagar os dois arquivos -p160.js.
+  index.html, sw.js                         (alterados; cache ded-web-v1.21.0)
+  assets/index-D6qIWtA7-p162.js             (novo)
+  assets/ControlsPanel-kYdEPlgz-p162.js     (novo)
+  assets/pixel-art/forest-open/fr-*.png     (novos — 35 sprites da floresta aberta,
+                                             feitos com os packs Resurrected RPG e
+                                             Forgotten Memories)
+  Pode apagar os dois arquivos -p161.js.
 
-CORREÇÃO — BOTÃO START (E SELECT) DO CONTROLE
-· O problema: durante a fase, START abria a pausa e, no mesmo aperto, o
-  controle também "clicava" na primeira opção da pausa (CONTINUAR),
-  fechando-a na hora — parecia que o START não fazia nada. O mesmo
-  acontecia com SELECT (abria e fechava o inventário).
-· Correções:
-    - um botão que já estava apertado quando um menu abre não é mais
-      repassado para esse menu (vale para todos os botões);
-    - durante a fase e a Travessia, START e SELECT ficam só com a função
-      do jogo (pausar / inventário); nos menus e vídeos continuam
-      confirmando / voltando.
-· Testado (Masmorra e Travessia): START abre a pausa e ela fica aberta;
-  START de novo fecha; SELECT abre e fecha o inventário; B fecha a
-  pausa; START/A/B continuam pulando os vídeos.
+FLORESTA ABERTA (Floresta de Eldervale)
+· Sem paredes de pedra: cada área virou uma CLAREIRA de grama, com os
+  cantos arredondados, cercada por mata densa (árvores do pack com
+  colisão nas bordas, arbustos e copas escuras ao fundo). As árvores
+  ficam na frente ou atrás do herói conforme a posição.
+· Os corredores viraram TRILHAS DE TERRA; manchas de terra, flores,
+  tocos e pedras espalhados. O fundo além da mata é verde-escuro.
+· ESPINHOS: ao entrar numa clareira com inimigos, espinheiros brotam em
+  todas as trilhas de saída e bloqueiam a passagem; ao derrotar o grupo,
+  eles murcham e somem. As portas antigas da floresta também viraram
+  muralhas de espinhos (só aparecem quando a área está trancada).
+· LAGO: um lago de água animada numa clareira sem inimigos (na versão
+  atual do mapa ele fica na clareira inicial, o Despertar), com tocos e
+  pedras na margem. A água bloqueia a passagem, mas sempre sobra caminho
+  em volta.
+· RIACHO com PONTE: um riacho atravessa o Acampamento dos Errantes de
+  cima a baixo, com uma ponte de madeira no meio para cruzar.
+· O lago e o riacho são posicionados automaticamente para não cobrir
+  baús, NPCs, decoração sólida, pontos de nascimento nem as entradas.
+· Minimapa, contagem de áreas, portal, vendedor, eventos, save e
+  dificuldade continuam funcionando como antes. As outras fases não
+  mudaram.
