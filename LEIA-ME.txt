@@ -1,24 +1,40 @@
-DEPTHGATE — PATCH p165 (SOMENTE ARQUIVOS NOVOS/ALTERADOS)
+DEPTHGATE — PATCH p169 (SOMENTE ARQUIVOS NOVOS/ALTERADOS)
 
 Copie por cima da pasta do jogo e recarregue com Ctrl+F5.
 
 ARQUIVOS
-  index.html, sw.js                          (alterados; cache ded-web-v1.22.1)
-  assets/index-D6qIWtA7-p165.js              (novo)
-  assets/ControlsPanel-kYdEPlgz-p165.js      (novo)
-  assets/pixel-art/forest-open/frb-*.png     (substituídos — volta o visual do p163)
-  assets/pixel-art/forest-open/frb-meta.json (substituído)
-  assets/pixel-art/forest-open/frt-*.png     (as 18 árvores do p163)
-  Pode apagar: os dois arquivos -p164.js e as árvores do p164
-  (frt-r-*.png, frt-f-*.png e frt-b-*.png).
+  index.html, sw.js                         (alterados; cache ded-web-v1.23.3)
+  assets/index-D6qIWtA7-p169.js             (novo)
+  assets/ControlsPanel-kYdEPlgz-p169.js     (novo)
+  assets/pixel-art/castle/cx-*.png          (objetos; novos: cx-spikes e cx-spikes-down)
+  assets/pixel-art/castle/cab-*.png         (substituídos — mapa refeito)
+  assets/pixel-art/castle/cab-meta.json     (substituído)
+  Pode apagar os dois arquivos -p168.js.
 
-O QUE MUDOU
-· A floresta voltou ao visual do p163 (o anterior), como pedido.
-· O lago da clareira inicial (Despertar) foi redesenhado:
-    - forma arredondada e orgânica, sem cantos quadrados;
-    - água com profundidade (mais clara na margem, azul-escura no meio)
-      e textura de ondas do pack Forgotten Memories;
-    - espuma clara na borda, faixa de areia molhada e pedrinhas em volta;
-    - vitórias-régias (algumas com flor rosa) e juncos na margem;
-    - reflexos de luz que brilham e somem devagar sobre a água.
-· O riacho com ponte e os espinheiros continuam iguais.
+CASTELO COM AMBIENTES COMPOSTOS (como nas referências)
+· Cada sala tem uma composição própria e simétrica, sem repetir o mesmo
+  objeto espalhado:
+    Sala do Trono: trono no estrado, cavaleiros e estandartes dos dois
+      lados, fileiras de colunas ao longo do tapete, candelabros.
+    Galerias/Antecâmara/Portão: colunas em fileiras dos dois lados do
+      tapete, estátuas de cavaleiro, estandartes e candelabros.
+    Banquete: duas mesas longas de cada lado do tapete, com cadeiras
+      nas cabeceiras, aparadores, candelabros, javali e frutas.
+    Caserna: beliches enfileirados na parede, suportes de alabardas,
+      mesa das chaves, barricada.
+    Celas: forca, donzela de ferro, cavalete, cepo, forja, correntes.
+    Cripta: sarcófagos em duas fileiras, altar, anjos, urnas, velas.
+    Biblioteca: estantes enfileiradas na parede, mesa de alquimia no
+      círculo mágico, caldeirões, planetários, globo, luneta, atril.
+    Arsenal, Aposentos, Capela e Cofre com seus próprios arranjos.
+· Decoração das paredes simétrica e com espaçamento igual (vitrais,
+  estandartes, lareiras, grades...), e tochas espelhadas.
+· TAPETE VERMELHO novo: desenhado inteiro, contínuo e reto (sem emendas
+  nem desvios), com barra dourada e losangos. Salas e corredores foram
+  alinhados para o tapete seguir em linha reta pelos corredores e pelo
+  eixo das salas, formando cruzamentos como na referência.
+· ARMADILHAS DE ESPINHOS (funcionam): fileiras atravessando a caserna,
+  as celas, a cripta, o arsenal e as galerias. Os espinhos sobem e
+  descem em ritmo alternado (tremem um instante antes de subir) e tiram
+  1 de vida de quem pisar com eles levantados.
+· Continua conferido: todas as salas, inimigos e baús alcançáveis.
