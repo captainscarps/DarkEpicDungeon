@@ -1,26 +1,26 @@
-DEPTHGATE — PATCH p159 (SOMENTE ARQUIVOS NOVOS/ALTERADOS)
+DEPTHGATE — PATCH p160 (SOMENTE ARQUIVOS NOVOS/ALTERADOS)
 
 Copie por cima da pasta do jogo e recarregue com Ctrl+F5.
 
 ARQUIVOS
-  index.html, sw.js                         (alterados; cache ded-web-v1.19.4)
-  assets/index-D6qIWtA7-p159.js             (novo)
-  assets/ControlsPanel-kYdEPlgz-p159.js     (novo)
-  Pode apagar os dois arquivos -p158.js.
+  index.html, sw.js                         (alterados; cache ded-web-v1.20.0)
+  assets/index-D6qIWtA7-p160.js             (novo)
+  assets/ControlsPanel-kYdEPlgz-p160.js     (novo — tela de controles redesenhada)
+  Pode apagar os dois arquivos -p159.js.
 
-CONTROLE NOS MENUS E VÍDEOS
-· Vídeos (abertura do jogo, introdução da campanha, Modo Infinito):
-  antes o controle não conseguia passar da tela "pressione qualquer
-  tecla" nem pular o vídeo, porque os vídeos só escutavam o teclado.
-  Agora A, B, START (e os demais botões mapeados) começam e pulam os
-  vídeos; o botão também não "vaza" para o menu que está por baixo.
-· Botões novos nos menus:
-    START  = confirmar (igual ao A)
-    SELECT = voltar (igual ao B)
-    LB/RB  = trocar de categoria/aba (ex.: Configurações)
-  Já existiam: direcional e analógico esquerdo navegam, A confirma,
-  B volta, X apaga, Y alterna.
-· Observação: os navegadores não contam botão de controle como
-  "interação do usuário" para liberar som. Se o jogo for aberto e a
-  primeira ação for pelo controle, o vídeo de abertura pode tocar sem
-  som; qualquer clique ou tecla no teclado libera o áudio.
+O QUE MUDOU
+· TELA DE CONTROLES (Teclas e Botões) redesenhada no mesmo estilo das
+  Configurações: faixa vermelha à esquerda, título grande, cada ação em
+  uma linha com duas caixas (TECLADO e CONTROLE); a linha e a caixa
+  selecionadas ficam destacadas. Os botões do controle aparecem com o
+  nome certo do seu controle (Xbox, PlayStation ou Switch).
+  Agora dá para remapear sem mouse:
+    ↑↓ escolhe a ação · ←→ alterna Teclado/Controle ·
+    ENTER (ou A) altera · ESC (ou B) volta/cancela.
+  Ao alterar, a caixa mostra "..." e o rodapé pede a tecla/botão.
+· DEMAIS MENUS ANTIGOS com o visual novo: todos os painéis que ainda
+  usavam a moldura antiga (inventário, árvore de habilidades, painéis
+  do Refúgio, Hall da Fama, apresentação do Modo Infinito, confirmações,
+  HUD etc.) agora usam o painel escuro translúcido com faixa de topo
+  avermelhada, borda fina dourada, cantos marcados e barra de destaque
+  à esquerda nos painéis grandes — o mesmo estilo das telas novas.
