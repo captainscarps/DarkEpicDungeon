@@ -1,35 +1,28 @@
-DEPTHGATE — PATCH p162 (SOMENTE ARQUIVOS NOVOS/ALTERADOS)
+DEPTHGATE — PATCH p163 (SOMENTE ARQUIVOS NOVOS/ALTERADOS)
 
 Copie por cima da pasta do jogo e recarregue com Ctrl+F5.
+(Requer os sprites fr-*.png do p162, que continuam em uso.)
 
 ARQUIVOS
-  index.html, sw.js                         (alterados; cache ded-web-v1.21.0)
-  assets/index-D6qIWtA7-p162.js             (novo)
-  assets/ControlsPanel-kYdEPlgz-p162.js     (novo)
-  assets/pixel-art/forest-open/fr-*.png     (novos — 35 sprites da floresta aberta,
-                                             feitos com os packs Resurrected RPG e
-                                             Forgotten Memories)
-  Pode apagar os dois arquivos -p161.js.
+  index.html, sw.js                          (alterados; cache ded-web-v1.21.1)
+  assets/index-D6qIWtA7-p163.js              (novo)
+  assets/ControlsPanel-kYdEPlgz-p163.js      (novo)
+  assets/pixel-art/forest-open/frb-*.png     (novos — 30 pedaços do mapa pré-desenhado)
+  assets/pixel-art/forest-open/frt-*.png     (novos — 18 árvores da frente)
+  assets/pixel-art/forest-open/frb-meta.json (novo — posição das árvores da frente)
+  Pode apagar os dois arquivos -p162.js.
 
-FLORESTA ABERTA (Floresta de Eldervale)
-· Sem paredes de pedra: cada área virou uma CLAREIRA de grama, com os
-  cantos arredondados, cercada por mata densa (árvores do pack com
-  colisão nas bordas, arbustos e copas escuras ao fundo). As árvores
-  ficam na frente ou atrás do herói conforme a posição.
-· Os corredores viraram TRILHAS DE TERRA; manchas de terra, flores,
-  tocos e pedras espalhados. O fundo além da mata é verde-escuro.
-· ESPINHOS: ao entrar numa clareira com inimigos, espinheiros brotam em
-  todas as trilhas de saída e bloqueiam a passagem; ao derrotar o grupo,
-  eles murcham e somem. As portas antigas da floresta também viraram
-  muralhas de espinhos (só aparecem quando a área está trancada).
-· LAGO: um lago de água animada numa clareira sem inimigos (na versão
-  atual do mapa ele fica na clareira inicial, o Despertar), com tocos e
-  pedras na margem. A água bloqueia a passagem, mas sempre sobra caminho
-  em volta.
-· RIACHO com PONTE: um riacho atravessa o Acampamento dos Errantes de
-  cima a baixo, com uma ponte de madeira no meio para cruzar.
-· O lago e o riacho são posicionados automaticamente para não cobrir
-  baús, NPCs, decoração sólida, pontos de nascimento nem as entradas.
-· Minimapa, contagem de áreas, portal, vendedor, eventos, save e
-  dificuldade continuam funcionando como antes. As outras fases não
-  mudaram.
+FLORESTA MAIS FIEL À PRÉVIA
+· O mapa da Floresta de Eldervale agora é pré-desenhado com a mesma
+  técnica da prévia: mata densa com árvores sobrepostas de vários
+  tamanhos e tons, sombras sob as árvores, trilhas de terra contínuas e
+  sinuosas (entre as clareiras e até o centro de cada uma), clareiras
+  com luz mais clara e quente no centro e mata mais escura ao fundo —
+  sem os quadrados escuros de "copa" da versão anterior.
+· As bordas das clareiras ficaram irregulares (a mata avança em
+  pontos aleatórios e nos cantos), com a colisão acompanhando o desenho.
+· As árvores da borda que ficam na frente do herói continuam como
+  sprites separados, então o herói passa por trás delas normalmente.
+· Lago, riacho com ponte e espinheiros continuam como no p162; a margem
+  do lago e do riacho ganhou uma faixa de terra molhada.
+· Bem mais leve: a fase caiu de ~5.000 para ~850 objetos na tela.
