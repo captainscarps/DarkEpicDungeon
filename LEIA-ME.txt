@@ -1,11 +1,11 @@
-DEPTHGATE — PATCH p184 (sobre a p180 a p183)
+DEPTHGATE — PATCH p185 (sobre a p180 a p184)
 
 Envie/copie mantendo as pastas:
-  index.html, sw.js (cache ded-web-v1.32.1)
-  assets/index-D6qIWtA7-p184.js, assets/ControlsPanel-kYdEPlgz-p184.js
+  index.html, sw.js (cache ded-web-v1.32.2)
+  assets/index-D6qIWtA7-p185.js, assets/ControlsPanel-kYdEPlgz-p185.js
   assets/pixel-art/ui2/  (21 imagens da interface nova)
-Pode apagar os .js antigos (-p180 a -p183).
+Pode apagar os .js antigos (-p180 a -p184).
 
-Inclui toda a interface nova e agora também Loja, Árvore de habilidades,
-Hall da Fama e Resultado no estilo novo; portal do Castelo afastado da
-estátua; cristais não aparecem mais à venda.
+Correções do inventário: janela centralizada em telas largas (também loja
+e árvore de habilidades), foco dourado no lugar certo e como tirar a
+seleção do item (tocar num espaço vazio, fora da janela, ou ESC/B).
