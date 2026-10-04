@@ -1,10 +1,10 @@
-DEPTHGATE — PATCH p179 (sobre a p178)
+DEPTHGATE — PATCH p180 (sobre a p179)
 
-Envie/copie: index.html, sw.js (cache ded-web-v1.29.2),
-assets/index-D6qIWtA7-p179.js, assets/ControlsPanel-kYdEPlgz-p179.js
-e assets/pixel-art/hub/hub-portal2.png (novo).
-Pode apagar os dois arquivos -p178.js.
+Envie/copie: index.html, sw.js (cache ded-web-v1.30.0),
+assets/index-D6qIWtA7-p180.js e assets/ControlsPanel-kYdEPlgz-p180.js.
+Pode apagar os dois arquivos -p179.js.
 
-AJUSTE: os portais da Sala dos Portais agora ficam fixos, só brilhando
-(a animação original tinha os quadros desalinhados e fazia o portal
-"andar"). Selados e o do Castelo adormecido ficam apagados.
+· Masmorras e Castelo: inimigos e chefes escalam pelo nível do herói e
+  pelo poder dele (atributos + equipamento), sem os tetos antigos.
+· Itens escassos: comuns -63%, elites 35%, baús com metade dos itens,
+  item extra de chefe com 40% da chance, poções 3%.
