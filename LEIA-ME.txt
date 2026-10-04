@@ -1,11 +1,10 @@
-DEPTHGATE — PATCH p181 (sobre a p180)
+DEPTHGATE — PATCH p182 (sobre a p180 ou p181)
 
 Envie/copie mantendo as pastas:
-  index.html, sw.js (cache ded-web-v1.31.0)
-  assets/index-D6qIWtA7-p181.js, assets/ControlsPanel-kYdEPlgz-p181.js
-  assets/pixel-art/ui2/  (14 imagens novas do HUD)
-Pode apagar os dois arquivos -p180.js.
+  index.html, sw.js (cache ded-web-v1.31.1)
+  assets/index-D6qIWtA7-p182.js, assets/ControlsPanel-kYdEPlgz-p182.js
+  assets/pixel-art/ui2/  (19 imagens: HUD + janelas e botões)
+Pode apagar os arquivos -p180.js / -p181.js.
 
-HUD novo (pacote RPG MMO UI): globos de vida/recurso na barra de ações,
-retrato/nome/nível/ouro em cima (sem repetir a vida), quadro compacto e
-botões/joystick novos no celular, minimapa com moldura nova.
+Inclui o HUD novo (p181) e agora também Inventário, Pausa e
+Configurações no estilo do pacote RPG MMO UI.
