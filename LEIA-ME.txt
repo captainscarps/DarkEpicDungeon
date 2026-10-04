@@ -1,12 +1,11 @@
-DEPTHGATE — PATCH p191 (sobre a p190)
+DEPTHGATE — PATCH p192 (sobre a p191)
 
-Envie/copie mantendo as pastas:
-  index.html, sw.js (cache ded-web-v1.35.0)
-  assets/index-D6qIWtA7-p191.js, assets/ControlsPanel-kYdEPlgz-p191.js
-  assets/pixel-art/story/  (pasta nova: retratos e sprites da Guardiã e do Rei)
-Pode apagar os arquivos -p190.js.
+Envie/copie: index.html, sw.js (cache ded-web-v1.35.1),
+assets/index-D6qIWtA7-p192.js e assets/ControlsPanel-kYdEPlgz-p192.js.
+Pode apagar os arquivos -p191.js.
 
-História: sistema de diálogo com retratos; a Guardiã (Elyndra) na
-Floresta e no Coração com falas por etapa de selos; visões do Rei de
-Valdrak (Aelric) usurpado pelo Observador; final com o Rei e a escolha
-Selar de Novo / Libertar o Rei. Sem número fixo de selos ou portais.
+Correções de travamento: o jogo não congela mais por erro em uma cena;
+salas abandonadas no meio do combate passam a ser concluídas quando não
+há inimigos; braseiros/totens pendentes ficam marcados com "!" e o
+objetivo se completa sozinho após 45 s sem inimigos; diálogos não se
+sobrepõem e sempre liberam o controle.
