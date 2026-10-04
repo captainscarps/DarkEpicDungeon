@@ -1,10 +1,10 @@
-DEPTHGATE — PATCH p186 (sobre a p180 a p185)
+DEPTHGATE — PATCH p187 (sobre a p180 a p186)
 
 Envie/copie mantendo as pastas:
-  index.html, sw.js (cache ded-web-v1.32.3)
-  assets/index-D6qIWtA7-p186.js, assets/ControlsPanel-kYdEPlgz-p186.js
+  index.html, sw.js (cache ded-web-v1.32.4)
+  assets/index-D6qIWtA7-p187.js, assets/ControlsPanel-kYdEPlgz-p187.js
   assets/pixel-art/ui2/  (21 imagens da interface nova)
-Pode apagar os .js antigos (-p180 a -p185).
+Pode apagar os .js antigos (-p180 a -p186).
 
-Textos não ultrapassam mais seus quadros: ajuste automático de tamanho
-(com "…" se preciso) e quebra de linha nas dicas e no quadro de objetivo.
+Ajustes de textos e posições nas Configurações (inclusive na tela
+inicial), no Inventário e na tela de Habilidades.
