@@ -1,14 +1,9 @@
-DEPTHGATE — PATCH p194 (sobre a p193)
+DEPTHGATE — PATCH p195 (sobre a p194)
 
-Envie/copie mantendo as pastas:
-  index.html, sw.js (cache ded-web-v1.37.0)
-  assets/index-D6qIWtA7-p194.js, assets/ControlsPanel-kYdEPlgz-p194.js
-  assets/video/background_menu.mp4 e .webm   (fundo novo do menu)
-  assets/pixel-art/enemies/  (8 sprites novos de inimigos)
-  assets/pixel-art/bosses/boss-gorgon-forest.png, boss-necro-queen.png
-  assets/pixel-art/story/seal-break.png, seal-ward.png, seal-crystal.png
-Pode apagar os arquivos -p193.js.
+Envie/copie: index.html, sw.js (cache ded-web-v1.38.0),
+assets/index-D6qIWtA7-p195.js e assets/ControlsPanel-kYdEPlgz-p195.js.
+Pode apagar os arquivos -p194.js.
 
-Guardiã/Rei no tamanho dos heróis, vídeo novo no menu (ajustado a
-qualquer tela), 7 inimigos com sprites novos, Górgona do Bosque e Rainha
-Necromante (com invocação) como chefes, e efeitos de selo mágico.
+Roteiro: falas pessoais de cada herói na masmorra ligada à sua história
+(entrada e depois do chefe), aba CRÔNICAS no inventário com tudo o que
+foi descoberto, e aberturas das fases reescritas para a nova história.
