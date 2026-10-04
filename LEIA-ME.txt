@@ -1,11 +1,10 @@
-DEPTHGATE — PATCH p192 (sobre a p191)
+DEPTHGATE — PATCH p193 (sobre a p192)
 
-Envie/copie: index.html, sw.js (cache ded-web-v1.35.1),
-assets/index-D6qIWtA7-p192.js e assets/ControlsPanel-kYdEPlgz-p192.js.
-Pode apagar os arquivos -p191.js.
+Envie/copie mantendo as pastas:
+  index.html, sw.js (cache ded-web-v1.36.0)
+  assets/index-D6qIWtA7-p193.js, assets/ControlsPanel-kYdEPlgz-p193.js
+  assets/pixel-art/story/  (13 ilustrações novas .jpg + retratos/sprites)
+Pode apagar os arquivos -p192.js.
 
-Correções de travamento: o jogo não congela mais por erro em uma cena;
-salas abandonadas no meio do combate passam a ser concluídas quando não
-há inimigos; braseiros/totens pendentes ficam marcados com "!" e o
-objetivo se completa sozinho após 45 s sem inimigos; diálogos não se
-sobrepõem e sempre liberam o controle.
+Abertura narrada pela Guardiã antes da escolha de classe (pode pular) e
+visões ilustradas ao pegar o cristal de cada masmorra.
