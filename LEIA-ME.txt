@@ -1,13 +1,12 @@
-DEPTHGATE — PATCH p188 (sobre a p187)
+DEPTHGATE — PATCH p191 (sobre a p190)
 
 Envie/copie mantendo as pastas:
-  index.html, sw.js (cache ded-web-v1.33.0)
-  assets/index-D6qIWtA7-p188.js, assets/ControlsPanel-kYdEPlgz-p188.js
-  assets/pixel-art/newmaps/   (pasta nova: objetos + mapas das 3 fases)
-  assets/pixel-art/castle/icon-crys-bosque.png, -rio.png, -morta.png
-  assets/pixel-art/ui2/       (mesmas imagens da interface)
-Pode apagar os arquivos -p187.js.
+  index.html, sw.js (cache ded-web-v1.35.0)
+  assets/index-D6qIWtA7-p191.js, assets/ControlsPanel-kYdEPlgz-p191.js
+  assets/pixel-art/story/  (pasta nova: retratos e sprites da Guardiã e do Rei)
+Pode apagar os arquivos -p190.js.
 
-3 masmorras novas: Bosque Sombrio (Ent Ancestral), Rio Esquecido
-(Senhor Tengu) e Floresta Morta (Bruxa Raposa), com portais na Sala dos
-Portais da Floresta. O Castelo agora pede as 7 masmorras.
+História: sistema de diálogo com retratos; a Guardiã (Elyndra) na
+Floresta e no Coração com falas por etapa de selos; visões do Rei de
+Valdrak (Aelric) usurpado pelo Observador; final com o Rei e a escolha
+Selar de Novo / Libertar o Rei. Sem número fixo de selos ou portais.
