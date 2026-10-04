@@ -1,10 +1,13 @@
-DEPTHGATE — PATCH p187 (sobre a p180 a p186)
+DEPTHGATE — PATCH p188 (sobre a p187)
 
 Envie/copie mantendo as pastas:
-  index.html, sw.js (cache ded-web-v1.32.4)
-  assets/index-D6qIWtA7-p187.js, assets/ControlsPanel-kYdEPlgz-p187.js
-  assets/pixel-art/ui2/  (21 imagens da interface nova)
-Pode apagar os .js antigos (-p180 a -p186).
+  index.html, sw.js (cache ded-web-v1.33.0)
+  assets/index-D6qIWtA7-p188.js, assets/ControlsPanel-kYdEPlgz-p188.js
+  assets/pixel-art/newmaps/   (pasta nova: objetos + mapas das 3 fases)
+  assets/pixel-art/castle/icon-crys-bosque.png, -rio.png, -morta.png
+  assets/pixel-art/ui2/       (mesmas imagens da interface)
+Pode apagar os arquivos -p187.js.
 
-Ajustes de textos e posições nas Configurações (inclusive na tela
-inicial), no Inventário e na tela de Habilidades.
+3 masmorras novas: Bosque Sombrio (Ent Ancestral), Rio Esquecido
+(Senhor Tengu) e Floresta Morta (Bruxa Raposa), com portais na Sala dos
+Portais da Floresta. O Castelo agora pede as 7 masmorras.
