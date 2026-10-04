@@ -1,13 +1,10 @@
-DEPTHGATE — PATCH p178 (sobre a p177)
+DEPTHGATE — PATCH p179 (sobre a p178)
 
-Envie/copie: index.html, sw.js (cache ded-web-v1.29.1),
-assets/index-D6qIWtA7-p178.js e assets/ControlsPanel-kYdEPlgz-p178.js.
-Pode apagar os dois arquivos -p177.js.
+Envie/copie: index.html, sw.js (cache ded-web-v1.29.2),
+assets/index-D6qIWtA7-p179.js, assets/ControlsPanel-kYdEPlgz-p179.js
+e assets/pixel-art/hub/hub-portal2.png (novo).
+Pode apagar os dois arquivos -p178.js.
 
-CORREÇÃO: a Floresta travava porque o 3º Cristal Esmeralda estava no
-Jardim Escondido, sala que só se acessa pelo Coração da Floresta (selado
-até ter os 3 cristais). O cristal e seu troll guardião foram para as
-OSSADAS (canto direito). Cristais: Bosque, Caverna de Cristal e Ossadas.
-O selo do Coração mostra quais clareiras ainda faltam.
-Obs.: num save em andamento na Floresta, entre nas Ossadas para o
-guardião aparecer (se ela já estiver limpa, o cristal surge no centro).
+AJUSTE: os portais da Sala dos Portais agora ficam fixos, só brilhando
+(a animação original tinha os quadros desalinhados e fazia o portal
+"andar"). Selados e o do Castelo adormecido ficam apagados.
