@@ -1,11 +1,11 @@
-DEPTHGATE — PATCH p183 (sobre a p180, p181 ou p182)
+DEPTHGATE — PATCH p184 (sobre a p180 a p183)
 
 Envie/copie mantendo as pastas:
-  index.html, sw.js (cache ded-web-v1.32.0)
-  assets/index-D6qIWtA7-p183.js, assets/ControlsPanel-kYdEPlgz-p183.js
+  index.html, sw.js (cache ded-web-v1.32.1)
+  assets/index-D6qIWtA7-p184.js, assets/ControlsPanel-kYdEPlgz-p184.js
   assets/pixel-art/ui2/  (21 imagens da interface nova)
-Pode apagar os arquivos -p180/-p181/-p182.js.
+Pode apagar os .js antigos (-p180 a -p183).
 
-Inclui toda a interface nova: HUD (p181), janelas (p182) e agora
-inventário com abas (Equipamento/Atributos/Missão) e dica flutuante,
-configurações com abas no topo, barra do chefe e quadro de objetivo novos.
+Inclui toda a interface nova e agora também Loja, Árvore de habilidades,
+Hall da Fama e Resultado no estilo novo; portal do Castelo afastado da
+estátua; cristais não aparecem mais à venda.
