@@ -1,10 +1,11 @@
-DEPTHGATE — PATCH p182 (sobre a p180 ou p181)
+DEPTHGATE — PATCH p183 (sobre a p180, p181 ou p182)
 
 Envie/copie mantendo as pastas:
-  index.html, sw.js (cache ded-web-v1.31.1)
-  assets/index-D6qIWtA7-p182.js, assets/ControlsPanel-kYdEPlgz-p182.js
-  assets/pixel-art/ui2/  (19 imagens: HUD + janelas e botões)
-Pode apagar os arquivos -p180.js / -p181.js.
+  index.html, sw.js (cache ded-web-v1.32.0)
+  assets/index-D6qIWtA7-p183.js, assets/ControlsPanel-kYdEPlgz-p183.js
+  assets/pixel-art/ui2/  (21 imagens da interface nova)
+Pode apagar os arquivos -p180/-p181/-p182.js.
 
-Inclui o HUD novo (p181) e agora também Inventário, Pausa e
-Configurações no estilo do pacote RPG MMO UI.
+Inclui toda a interface nova: HUD (p181), janelas (p182) e agora
+inventário com abas (Equipamento/Atributos/Missão) e dica flutuante,
+configurações com abas no topo, barra do chefe e quadro de objetivo novos.
