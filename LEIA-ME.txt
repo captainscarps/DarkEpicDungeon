@@ -1,11 +1,14 @@
-DEPTHGATE — PATCH p197 (sobre a p195 ou p196)
+DEPTHGATE — PATCH p199 (sobre a p196, p197 ou p198)
 
 Envie/copie mantendo as pastas:
-  index.html, sw.js (cache ded-web-v1.39.0)
-  assets/index-D6qIWtA7-p197.js, assets/ControlsPanel-kYdEPlgz-p197.js
-  assets/pixel-art/story/*.jpg  (13 ilustrações refeitas, só cenário)
-Pode apagar os arquivos -p195.js / -p196.js.
+  index.html, sw.js (cache ded-web-v1.40.0)
+  assets/index-D6qIWtA7-p199.js, assets/ControlsPanel-kYdEPlgz-p199.js
+  assets/pixel-art/story/*.jpg  (ilustrações só com cenário, do p197)
+Pode apagar os arquivos .js antigos.
 
-Inclui a correção do chefe que sumia ao carregar o save (p196), as
-ilustrações da história só com cenário, os ecos do passado em cada
-masmorra, novas inscrições — e completa o roteiro aprovado.
+· História traduzida para inglês e espanhol.
+· Abas do inventário com LB/RB no controle (Q/E no teclado).
+· Vida restaurada ao voltar à Floresta depois de uma masmorra.
+· Ao morrer: botão "VOLTAR À FLORESTA" para tentar a masmorra do início.
+· Vendedor no Jardim Escondido (sala secreta ao lado do Coração).
+· Bolsa de cristais: cristais não ocupam espaço na mochila.
