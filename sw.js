@@ -1,7 +1,7 @@
 // DEPTHGATE — service worker mínimo e seguro contra cache velho:
 // navegação/index = REDE PRIMEIRO (nunca fica preso em versão antiga);
 // assets com hash do Vite = cache primeiro (são imutáveis por nome).
-const CACHE = "ded-web-v1.40.0";
+const CACHE = "ded-web-v1.41.1";
 
 self.addEventListener("install", () => self.skipWaiting());
 
@@ -19,6 +19,8 @@ self.addEventListener("fetch", (e) => {
   if (req.method !== "GET" || !req.url.startsWith(self.location.origin)) return;
   // vídeos (e pedidos parciais/range) vão direto à rede: o cache não guarda respostas 206
   if (new URL(req.url).pathname.match(/\.(mp4|webm)$/) || req.headers.has("range")) return;
+  // configuração do ranking online sempre direto da rede
+  if (new URL(req.url).pathname.endsWith("online-config.json")) return;
   const isNav = req.mode === "navigate" || new URL(req.url).pathname.endsWith("/index.html");
   if (isNav) {
     e.respondWith(

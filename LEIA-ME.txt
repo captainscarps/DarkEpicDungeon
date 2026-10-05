@@ -1,14 +1,9 @@
-DEPTHGATE — PATCH p199 (sobre a p196, p197 ou p198)
+DEPTHGATE — PATCH p201 (sobre a p200)
 
-Envie/copie mantendo as pastas:
-  index.html, sw.js (cache ded-web-v1.40.0)
-  assets/index-D6qIWtA7-p199.js, assets/ControlsPanel-kYdEPlgz-p199.js
-  assets/pixel-art/story/*.jpg  (ilustrações só com cenário, do p197)
-Pode apagar os arquivos .js antigos.
+Envie/copie: index.html, sw.js (cache ded-web-v1.41.1),
+assets/index-D6qIWtA7-p201.js, assets/ControlsPanel-kYdEPlgz-p201.js
+e assets/online-config.json (já com o endereço e a chave do seu Supabase).
+Pode apagar os arquivos -p200.js.
 
-· História traduzida para inglês e espanhol.
-· Abas do inventário com LB/RB no controle (Q/E no teclado).
-· Vida restaurada ao voltar à Floresta depois de uma masmorra.
-· Ao morrer: botão "VOLTAR À FLORESTA" para tentar a masmorra do início.
-· Vendedor no Jardim Escondido (sala secreta ao lado do Coração).
-· Bolsa de cristais: cristais não ocupam espaço na mochila.
+Antes de testar, rode o supabase-ranking.sql no Editor SQL do Supabase
+(uma vez só).
