@@ -1,7 +1,8 @@
-DEPTHGATE — PATCH p202 (sobre a p201)
+DEPTHGATE — PATCH p205 (sobre a p202, p203 ou p204)
 
-Envie/copie: index.html, sw.js (cache ded-web-v1.41.2),
-assets/index-D6qIWtA7-p202.js e assets/ControlsPanel-kYdEPlgz-p202.js.
-Pode apagar os arquivos -p201.js. (O online-config.json continua o mesmo.)
+Envie/copie: index.html, sw.js (cache ded-web-v1.42.2),
+assets/index-D6qIWtA7-p205.js e assets/ControlsPanel-kYdEPlgz-p205.js.
+Pode apagar os .js antigos.
 
-Botões do menu do Modo Infinito agora cabem dentro do quadro.
+Modo Infinito de volta aos 4 cenários de masmorra (padrão visual do jogo),
+com chefe a cada 3 profundidades e todos os chefes possíveis a partir da 12.
