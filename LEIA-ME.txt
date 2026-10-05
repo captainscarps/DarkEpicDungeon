@@ -1,9 +1,11 @@
-DEPTHGATE — PATCH p195 (sobre a p194)
+DEPTHGATE — PATCH p197 (sobre a p195 ou p196)
 
-Envie/copie: index.html, sw.js (cache ded-web-v1.38.0),
-assets/index-D6qIWtA7-p195.js e assets/ControlsPanel-kYdEPlgz-p195.js.
-Pode apagar os arquivos -p194.js.
+Envie/copie mantendo as pastas:
+  index.html, sw.js (cache ded-web-v1.39.0)
+  assets/index-D6qIWtA7-p197.js, assets/ControlsPanel-kYdEPlgz-p197.js
+  assets/pixel-art/story/*.jpg  (13 ilustrações refeitas, só cenário)
+Pode apagar os arquivos -p195.js / -p196.js.
 
-Roteiro: falas pessoais de cada herói na masmorra ligada à sua história
-(entrada e depois do chefe), aba CRÔNICAS no inventário com tudo o que
-foi descoberto, e aberturas das fases reescritas para a nova história.
+Inclui a correção do chefe que sumia ao carregar o save (p196), as
+ilustrações da história só com cenário, os ecos do passado em cada
+masmorra, novas inscrições — e completa o roteiro aprovado.
