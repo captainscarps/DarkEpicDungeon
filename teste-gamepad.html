@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Depthgate · Teste de controle</title>
+<style>
+  :root{--bg:#15110d;--panel:#211a13;--line:#4a3a26;--gold:#c9a45c;--text:#e8dcc0;--dim:#9a8b70;--ok:#7fb069;--bad:#d9674e;--warn:#e0b04a}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 Georgia,"Times New Roman",serif;padding:24px}
+  main{max-width:880px;margin:0 auto}
+  h1{font-size:28px;margin:0 0 4px;color:var(--gold);letter-spacing:.02em}
+  p.lead{margin:0 0 24px;color:var(--dim)}
+  section{background:var(--panel);border:1px solid var(--line);padding:16px 18px;margin-bottom:16px}
+  h2{font-size:17px;margin:0 0 10px;color:var(--gold)}
+  .row{display:flex;gap:10px;padding:3px 0;border-bottom:1px dashed #33291c}
+  .row:last-child{border:0}
+  .row b{min-width:210px;font-weight:normal;color:var(--dim)}
+  .ok{color:var(--ok)} .bad{color:var(--bad)} .warn{color:var(--warn)}
+  .pad{border:1px solid var(--line);padding:12px;margin-top:10px}
+  .pad h3{margin:0 0 6px;font-size:15px;word-break:break-all}
+  .btns{display:grid;grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:6px;margin:10px 0}
+  .b{border:1px solid var(--line);padding:4px 6px;font-size:12px;text-align:center;color:var(--dim)}
+  .b.on{background:var(--gold);color:#1a1410;border-color:var(--gold)}
+  .axes{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
+  .ax{font-size:12px;color:var(--dim)}
+  .bar{height:8px;background:#0e0b08;border:1px solid var(--line);position:relative}
+  .bar i{position:absolute;top:0;bottom:0;background:var(--gold)}
+  .empty{color:var(--warn)}
+  #log{font-size:13px;color:var(--dim);max-height:140px;overflow:auto;margin:0;white-space:pre-wrap}
+  button{font:inherit;background:var(--gold);color:#1a1410;border:0;padding:8px 16px;cursor:pointer}
+  button:focus-visible{outline:2px solid var(--text);outline-offset:2px}
+  #copied{margin-left:10px;color:var(--ok)}
+</style>
+</head>
+<body>
+<main>
+  <h1>Teste de controle</h1>
+  <p class="lead">Com o controle ligado, clique nesta página e aperte qualquer botão dele. Depois use “Copiar relatório” e cole na conversa.</p>
+
+  <section>
+    <h2>Navegador e jogo</h2>
+    <div id="env"></div>
+  </section>
+
+  <section>
+    <h2>Controles vistos pelo navegador</h2>
+    <div id="pads"><p class="empty">Nenhum controle detectado ainda. Aperte um botão do controle com esta aba em foco.</p></div>
+  </section>
+
+  <section>
+    <h2>Eventos</h2>
+    <pre id="log">(nenhum evento ainda)</pre>
+  </section>
+
+  <button id="copy">Copiar relatório</button><span id="copied"></span>
+</main>
+<script>
+const NAMES=["A / ✕","B / ○","X / □","Y / △","LB","RB","LT","RT","Select","Start","L3","R3","↑","↓","←","→","Home"];
+const env=document.getElementById('env'),padsEl=document.getElementById('pads'),logEl=document.getElementById('log');
+const info={};let logLines=[];
+function log(t){logLines.push(new Date().toLocaleTimeString()+"  "+t);logEl.textContent=logLines.slice(-30).join("\n")}
+function row(k,v,cls=""){return `<div class="row"><b>${k}</b><span class="${cls}">${v}</span></div>`}
+async function checkEnv(){
+  const ua=navigator.userAgent;
+  info.browser=/Edg\//.test(ua)?"Edge":/Chrome\//.test(ua)?"Chrome":/Firefox\//.test(ua)?"Firefox":/Safari\//.test(ua)?"Safari":"outro";
+  info.mac=/Mac/.test(navigator.platform||ua);
+  info.secure=window.isSecureContext;
+  info.iframe=window.top!==window.self;
+  info.api=typeof navigator.getGamepads==="function";
+  info.url=location.href;
+  try{const h=await (await fetch('index.html',{cache:'no-store'})).text();const m=h.match(/assets\/(index-[^"']+\.js)/);info.bundle=m?m[1]:"não encontrado"}catch(e){info.bundle="não foi possível ler index.html ("+e.message+")"}
+  try{info.caches=(await caches.keys()).join(", ")||"nenhum"}catch{info.caches="indisponível"}
+  try{const r=await navigator.serviceWorker?.getRegistration();info.sw=r?"ativo":"nenhum"}catch{info.sw="indisponível"}
+  info.patched=/p12[5-9]/.test(info.bundle);
+  env.innerHTML=
+    row("Navegador",`${info.browser}${info.mac?" (macOS)":""}`)+
+    row("Endereço",info.url,info.secure?"":"bad")+
+    row("Contexto seguro",info.secure?"sim":"não: abra por http://localhost ou https",info.secure?"ok":"bad")+
+    row("Dentro de iframe",info.iframe?"sim: o site precisa de allow=\"gamepad\"":"não",info.iframe?"warn":"ok")+
+    row("Gamepad API",info.api?"disponível":"indisponível neste navegador",info.api?"ok":"bad")+
+    row("Bundle do jogo",info.bundle,info.patched?"ok":"bad")+
+    row("Patch aplicado",info.patched?"sim (p125)":"não: o jogo ainda está na versão antiga",info.patched?"ok":"bad")+
+    row("Caches do service worker",info.caches);
+}
+function render(){
+  let list=[];try{list=Array.from(navigator.getGamepads?.()??[])}catch(e){}
+  const pads=list.filter(Boolean);info.pads=pads.map(p=>({index:p.index,id:p.id,mapping:p.mapping||"(vazio)",connected:p.connected,buttons:p.buttons.length,axes:p.axes.length,pressed:p.buttons.map((b,i)=>b.pressed?i:null).filter(i=>i!=null)}));
+  if(!pads.length){padsEl.innerHTML='<p class="empty">Nenhum controle detectado ainda. Aperte um botão do controle com esta aba em foco.</p>';}
+  else padsEl.innerHTML=pads.map(p=>{
+    const std=p.mapping==="standard";
+    return `<div class="pad"><h3>#${p.index} · ${p.id}</h3>
+      ${row("Mapeamento",std?"standard":`"${p.mapping}" (não padrão: botões podem ficar trocados)`,std?"ok":"warn")}
+      ${row("Conectado",p.connected?"sim":"não",p.connected?"ok":"bad")}
+      <div class="btns">${p.buttons.map((b,i)=>`<div class="b${b.pressed||b.value>.5?" on":""}">${i}${std&&NAMES[i]?" · "+NAMES[i]:""}</div>`).join("")}</div>
+      <div class="axes">${p.axes.map((v,i)=>{const w=Math.abs(v)*50,l=v<0?50-w:50;return `<div class="ax">eixo ${i}: ${v.toFixed(2)}<div class="bar"><i style="left:${l}%;width:${w}%"></i></div></div>`}).join("")}</div>
+    </div>`}).join("");
+  requestAnimationFrame(render);
+}
+addEventListener("gamepadconnected",e=>log(`conectado #${e.gamepad.index}: ${e.gamepad.id} (mapping "${e.gamepad.mapping}")`));
+addEventListener("gamepaddisconnected",e=>log(`desconectado #${e.gamepad.index}: ${e.gamepad.id}`));
+document.getElementById('copy').onclick=async()=>{
+  const txt="RELATÓRIO GAMEPAD DEPTHGATE\n"+JSON.stringify({...info,eventos:logLines,userAgent:navigator.userAgent},null,2);
+  try{await navigator.clipboard.writeText(txt);document.getElementById('copied').textContent="Copiado."}
+  catch{prompt("Copie o relatório:",txt)}
+};
+checkEnv();render();
+</script>
+</body>
+</html>

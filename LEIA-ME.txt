@@ -1,14 +1,716 @@
-DEPTHGATE — PATCH p199 (sobre a p196, p197 ou p198)
+DEPTHGATE WEB — PROJETO COMPLETO (versão p209 · cache ded-web-v1.44.2)
 
-Envie/copie mantendo as pastas:
-  index.html, sw.js (cache ded-web-v1.40.0)
-  assets/index-D6qIWtA7-p199.js, assets/ControlsPanel-kYdEPlgz-p199.js
-  assets/pixel-art/story/*.jpg  (ilustrações só com cenário, do p197)
-Pode apagar os arquivos .js antigos.
+P209.1 — AJUSTES DA XAMÃ, LOBO-GUARÁ E TRILHA SONORA DOS BIOMAS
+· XAMÃ SEM TREMEDEIRA/PULO AO PARAR: os quadros 4 e 5 da animação de espera
+  (idlevar) estavam deslocados em 9 pixels nas folhas de sprites. Foram
+  recorrigidos e alinhados para uma respiração fluida e estável sem pulos.
+· ESPADA XAMÂNICA: o ataque básico da Xamã agora é corpo-a-corpo com a sua
+  lâmina xamânica (com cortes espirituais) em vez de zarabatana. Ela também
+  tem compatibilidade para equipar e disparar arcos normalmente.
+· LOBO XAMÃ: a habilidade "Espírito do Lobo-Guará" agora invoca o lobo real
+  dos sprites de "lobo xamã" (folha de 28 quadros com idle, corrida, salto,
+  mordida e efeitos espirituais).
+· TRILHA SONORA DOS BIOMAS INSERIDA:
+  - Cidadela Glacial / Cavernas: Frozen_Caverns_of_Ice.mp3
+  - Profundezas Amazônicas: musica_profudezas_amazonicas.mp3
+  - Floresta Morta: musica_floresta_morta.mp3
+  - Ilhas / Rio: musica_rio.mp3
+  - Modo Infinito agora toca a música própria de cada bioma visitado.
 
-· História traduzida para inglês e espanhol.
-· Abas do inventário com LB/RB no controle (Q/E no teclado).
-· Vida restaurada ao voltar à Floresta depois de uma masmorra.
-· Ao morrer: botão "VOLTAR À FLORESTA" para tentar a masmorra do início.
-· Vendedor no Jardim Escondido (sala secreta ao lado do Coração).
-· Bolsa de cristais: cristais não ocupam espaço na mochila.
+P209
+· GÓRGONA DA FLORESTA agora é a chefe das ILHAS ("Senhora das Ilhas"),
+  na sala Ilha da Górgona — também no Modo Infinito.
+· CONGELAMENTO NO MODO INFINITO: a descida de andar (e outras transições)
+  esperava o fim de um escurecimento da câmera; se esse efeito fosse
+  interrompido, o jogo ficava parado para sempre. Agora a transição
+  continua sozinha se o efeito não terminar, e um vigia destrava qualquer
+  transição presa por mais de 9 s.
+· Castelo de Valdrak no Infinito desenhado numa única imagem (antes eram
+  ~1800 peças separadas), mais leve para celulares.
+
+
+NOVO NO p208 — ARAÍ, PROFUNDEZAS AMAZÔNICAS, ANHANGÁ E O FINAL CONTRA A GUARDIÃ
+· ARAÍ, A XAMÃ (nova heroína tupi, liberada desde o início): ataque com
+  dardos de zarabatana e recurso "Espírito". Poderes xamânicos: Raízes da
+  Jurema, Dardos de Curare, Espírito do Gavião-Real, Sopro do Pajé,
+  Espírito do Lobo-Guará e Tempestade de Tupã. Tem fala própria com a
+  Guardiã e falas pessoais nas Profundezas Amazônicas.
+· PROFUNDEZAS AMAZÔNICAS (antigo Bosque Sombrio): mapa redesenhado como
+  mata amazônica fechada; salas como Igapó, Maloca Esquecida, Pedras
+  Pintadas, Ninho do Gavião-Real e Coração da Sumaúma. Cristal Amazônico.
+  No Modo Infinito também aparece com esse nome e árvores novas.
+· ANHANGÁ: novo chefe da área (protetor das almas da mata, corrompido),
+  invoca fantasmas durante a luta. Falas, visão, eco, inscrições e
+  abertura da fase reescritas com os pajés, a sumaúma e o Anhangá.
+· FINAL: nova escolha "ENFRENTAR A GUARDIÃ". Elyndra consome todos os
+  selos e se transforma em ELYNDRA, A DEVORADORA DE SELOS (chefe final).
+  Ao vencê-la, ela e o Rei trocam as últimas falas e vem o epílogo
+  "A ÚLTIMA SENTINELA".
+· Tudo em português, inglês e espanhol.
+
+
+P207: a Floresta de Eldervale saiu do Modo Infinito. Ordem dos cenários:
+Catacumbas (1), Ruínas (3), Bosque Sombrio (5), Cidadela Glacial (7),
+Ilhas (9), Fortaleza (11), Floresta Morta (13), Castelo de Valdrak (15);
+da profundidade 17 em diante, sorteados entre esses 8.
+
+
+NOVO NO p206 — MODO INFINITO COM OS 9 CENÁRIOS DESENHADOS NA HORA
+· Floresta de Eldervale, Bosque Sombrio, Ilhas e Floresta Morta são
+  DESENHADOS PROCEDURALMENTE a cada andar, no mesmo estilo da campanha
+  (sem reaproveitar os mapas): grama em 3 tons com manchas, bordas
+  orgânicas com contorno escuro, trilhas de terra ligando as saídas ao
+  centro das salas, tufos e flores, mata que escurece longe das salas,
+  sombras e árvores do próprio cenário na frente do herói, arbustos na
+  borda. Ilhas: água com espuma, faixa de areia, juncos, pedras e
+  reflexos. Floresta Morta: névoa. Floresta/Bosque: vaga-lumes.
+· Castelo de Valdrak: piso de pedra rachada e paredes de cantaria do
+  pacote do castelo, com tochas e estandartes.
+· Decoração própria para os cenários abertos (sem caixões ou tochas no
+  meio da mata).
+· Chefe a cada 3 profundidades, combinando com o cenário.
+
+
+P205: o Modo Infinito volta a usar só os 4 cenários de masmorra que seguem
+o padrão visual do jogo (Catacumbas, Ruínas, Fortaleza, Cidadela Glacial).
+Mantido: chefe a cada 3 profundidades, combinando com o cenário, e a partir
+da profundidade 12 qualquer chefe do jogo pode aparecer (inclusive Górgona
+do Bosque, Senhor Tengu, Rainha Necromante e o Observador).
+
+
+AJUSTE DO p204 — MODO INFINITO COM OS SPRITES ATUAIS
+· Os andares de Floresta de Eldervale, Bosque Sombrio, Ilhas, Floresta
+  Morta e Castelo de Valdrak no Modo Infinito agora usam a MESMA arte da
+  campanha: o chão vem dos mapas atuais de cada cenário, as bordas da mata
+  usam as árvores atuais (árvores de Eldervale, pinheiros do Bosque,
+  árvores secas da Floresta Morta), as Ilhas têm água com espuma, juncos e
+  reflexos, e o Castelo tem as paredes de pedra do castelo atual.
+  (O p203 usava tiles antigos recoloridos — substituídos.)
+· Arquivos novos: assets/pixel-art/tiles/ek-*.png (5 imagens).
+
+
+NOVO NO p203 — MODO INFINITO COM TODOS OS CENÁRIOS
+· O Modo Infinito agora gera andares procedurais em TODOS os cenários:
+  Catacumbas, Floresta de Eldervale, Ruínas, Bosque Sombrio, Cidadela
+  Glacial, Ilhas, Fortaleza dos Dragões, Floresta Morta e Castelo de
+  Valdrak. Nas primeiras profundidades eles aparecem em sequência (um novo
+  a cada 2 andares) e depois da profundidade 19 o cenário é sorteado,
+  sem repetir o anterior.
+· CHEFES MAIS FREQUENTES: um chefe a cada 3 profundidades (antes a cada 5),
+  combinando com o cenário: Minotauro (Catacumbas), Górgona (Ruínas),
+  Golem de Gelo (Glacial), Dragão (Fortaleza), Górgona do Bosque (Bosque),
+  Senhor Tengu (Ilhas), Rainha Necromante (Floresta Morta) e o Observador
+  (Castelo). A partir da profundidade 12 há 30% de chance de um chefe
+  surpresa de outro cenário. A Corrida de Chefes a cada 25 continua.
+· 15 tiles novos em assets/pixel-art/tiles/ (biome-, wallface- e
+  walltop- de eforest, ebosque, erio, emorta, ecastle).
+
+
+P202: botões do menu do Modo Infinito reajustados para caberem dentro
+do quadro (o VOLTAR ficava para fora depois do Desafio Diário).
+
+
+P201: ranking online configurado para o projeto Supabase do DepthGate
+(assets/online-config.json preenchido) e compatível com a chave nova
+"publishable" (sb_publishable_...).
+
+
+NOVO NO p200 — HALL DA FAMA ONLINE E DESAFIO DIÁRIO
+· HALL DA FAMA com 3 abas: LOCAL (como antes), ONLINE (top 10 mundial do
+  Modo Infinito) e DESAFIO DE HOJE (top 10 do desafio do dia). Mostra a
+  melhor pontuação de cada nome.
+· DESAFIO DIÁRIO (menu do Modo Infinito): todo mundo joga com a mesma
+  semente do dia (ex.: DIA-20261005, troca à meia-noite UTC), escolhendo
+  qualquer classe. A PRIMEIRA tentativa do dia é a oficial e vai para o
+  ranking do dia; as seguintes são treino (contam no ranking geral).
+  O botão mostra "(FEITO)" depois da tentativa oficial.
+· Ao terminar uma run, com o online ativo o jogo sempre pede o nome e
+  envia a pontuação (aviso "PONTUAÇÃO ENVIADA" ou "SEM CONEXÃO").
+· Para ativar: veja COMO-ATIVAR-RANKING-ONLINE.txt (Supabase:
+  supabase-ranking.sql + chave em assets/online-config.json). Sem a
+  chave, tudo funciona só no modo local.
+
+
+NOVO NO p199 (inclui o p198)
+· HISTÓRIA EM INGLÊS E ESPANHOL (p198): abertura narrada, falas da
+  Guardiã e do Rei, visões, falas dos heróis, ecos, frases dos chefes,
+  final e epílogo, avisos, Sala dos Portais, Crônicas, aberturas das fases
+  e inscrições traduzidos. Os outros idiomas usam o inglês.
+· INVENTÁRIO COM CONTROLE: LB/RB trocam as abas (Equipamento, Atributos,
+  Missão, Crônicas); no teclado, Q/E ou PageUp/PageDown.
+· VIDA RESTAURADA ao voltar para a Floresta depois de terminar uma
+  masmorra (vida e recurso cheios).
+· NOVO BOTÃO AO MORRER numa masmorra ou no Castelo: "VOLTAR À FLORESTA" —
+  volta para a Sala dos Portais com a vida cheia, mantendo nível e itens,
+  para tentar a masmorra desde o início.
+· VENDEDOR no Jardim Escondido, a sala secreta ao lado do Coração da
+  Floresta.
+· BOLSA DE CRISTAIS: os cristais de missão não ocupam mais espaço na
+  mochila (a mochila cheia ainda aceita cristais) e não aparecem entre os
+  itens usáveis; ficam listados na aba Missão.
+
+
+NOVO NO p197 (inclui a correção do chefe do p196) — ROTEIRO COMPLETO
+· ILUSTRAÇÕES DA HISTÓRIA só com cenário: as 13 imagens da abertura e das
+  visões foram refeitas sem nenhum personagem (sem herói, inimigos,
+  Guardiã, Rei ou chefes) — apenas os lugares, com o tratamento de
+  memória.
+· ECOS DO PASSADO: na primeira sala concluída de cada masmorra (e do
+  Castelo) surgem figuras fantasmas translúcidas que encenam um momento
+  do passado, com falas flutuantes, e depois se desfazem. Ex.: os Antigos
+  lacrando os túmulos vazios (Catacumbas); os ferreiros jurando pelo
+  brasão (Ruínas); a rainha congelando o selo — "O Rei já não é o Rei"
+  (Glacial); o Rei deixando o dragão de guarda (Fortaleza); o druida e a
+  Górgona (Bosque); a Ordem do Limiar marcando pedras (Ilhas); a rainha
+  e sua sentinela (Floresta Morta); Elyndra implorando que Aelric não
+  abra as portas (Castelo). Cada eco entra nas Crônicas.
+· INSCRIÇÕES: Bosque Sombrio, Ilhas e Floresta Morta ganharam textos
+  próprios; a inscrição antiga do "tesouro" virou "Voltaremos quando ele
+  dormir"; o retrato do Castelo agora é do rei Aelric.
+· Com isso, todo o roteiro aprovado está no jogo: abertura narrada,
+  Guardiã com falas por etapa, visões dos cristais, falas pessoais dos
+  heróis, visões e voz do Rei, frases dos chefes, ecos, Crônicas e o
+  final com escolha.
+
+
+CORREÇÃO DO p196 — CHEFE SUMINDO AO CARREGAR O SAVE
+· Causa: na luta contra um chefe que invoca ajudantes (Rainha Necromante),
+  quando todas as sombras invocadas morriam o jogo considerava a SALA DO
+  CHEFE concluída, mesmo com o chefe vivo. O save gravava a sala como
+  concluída; ao morrer e carregar, o chefe não aparecia mais e a fase não
+  podia ser terminada.
+· Agora matar ajudantes/inimigos nunca conclui a sala do chefe — só a
+  derrota do chefe conclui.
+· Saves já afetados são consertados ao carregar: se a sala do chefe está
+  marcada como concluída mas o cristal daquela masmorra não foi obtido
+  (ou, no Castelo, a campanha não foi vencida), o chefe volta a aparecer.
+
+
+NOVO NO p195 — ROTEIRO: HERÓIS E CRÔNICAS
+· FALAS PESSOAIS DOS HERÓIS: cada herói tem uma masmorra ligada à sua
+  história e, ao entrar nela pela primeira vez, comenta o motivo de estar
+  ali; depois do chefe, faz uma reflexão sobre o que descobriu (antes da
+  visão do cristal):
+    Tharion (Druida) – Bosque Sombrio · Akihiro (Samurai) – Ruínas ·
+    Draven (Guerreiro) – Catacumbas · Vaelen (Arqueiro) – Ilhas ·
+    Seris (Ladina) – Castelo · Arthelia (Maga) – Cidadela Glacial ·
+    Valthor (Necromante) – Floresta Morta · Kael (Caçador) – Fortaleza.
+  A fala de entrada espera o quadro de abertura da fase ser fechado.
+· CRÔNICAS (4ª aba do inventário, Q/E ou LB/RB): registro da história
+  descoberta — inscrições examinadas, visões dos cristais, falas dos
+  heróis e as últimas palavras de cada chefe. Mais recentes primeiro;
+  ↑/↓ rola a lista. Aviso "NOVA CRÔNICA REGISTRADA" a cada entrada.
+  Fica gravado por save.
+· ABERTURAS DAS FASES reescritas para a nova história (sem a antiga
+  "caça ao tesouro"), e Bosque Sombrio, Ilhas, Floresta Morta e Castelo
+  ganharam abertura própria.
+
+
+NOVO NO p194 — PROPORÇÕES, VÍDEO DO MENU, INIMIGOS E CHEFES NOVOS
+· Guardiã e Rei agora na mesma altura dos heróis (estavam ~2x maiores);
+  a Guardiã da clareira inicial saiu de cima do lago.
+· Fundo do menu (e da escolha de classe): o novo vídeo do portal no
+  corredor, em laço e sem som, preenchendo a tela em qualquer proporção
+  (16:9, celular, ultrawide) sem distorcer; gradiente escuro à esquerda
+  para os textos continuarem legíveis. Se o navegador não carregar o
+  vídeo, volta o fundo antigo.
+· Inimigos com sprites novos (substituem os sprites antigos gerados):
+    Ciclope -> Ciclope de Pedra; Goblin Assassino -> Goblin de Elite;
+    Demônio -> Monstro Sombrio; Demônio Conjurador -> Monstro Sombrio II;
+    Orc Brutamontes -> Golem de Pedra; Elemental de Gelo -> Golem de
+    Cristal; Elemental de Fogo -> Golem de Magma.
+· Chefes novos:
+    Bosque Sombrio -> GÓRGONA DO BOSQUE (no lugar do Ent);
+    Floresta Morta -> RAINHA NECROMANTE (no lugar da Bruxa Raposa), que
+    INVOCA SOMBRAS durante a luta (mais rápido abaixo de metade da vida;
+    as sombras somem quando ela morre). Falas, visões e nome da sala
+    atualizados.
+· Selos mágicos animados: roxo quando um Selo do Guardião se rompe,
+  asas de luz quando um cristal surge e círculo de proteção girando sob
+  os portais já selados na Sala dos Portais.
+
+
+NOVO NO p193 — ABERTURA NARRADA E VISÕES DOS CRISTAIS
+· ABERTURA (campanha nova, antes da escolha de classe): 6 quadros
+  ilustrados narrados pela Guardiã, com texto que se escreve na tela e
+  aproximação lenta da imagem — o portal antigo e os Antigos; a floresta
+  corrompida ("Eles fugiram"); o Rei de Valdrak e o Observador no trono;
+  os portais despertando; os oito heróis; a Guardiã diante do portal
+  ("Escolha quem vai atravessar"). Enter/toque/A avança; PULAR, ESC ou
+  START pula. A escolha de classe fica bloqueada enquanto ela passa.
+· VISÕES DOS CRISTAIS: ao pegar o cristal de uma masmorra, antes de
+  voltar à Floresta, aparece uma memória ilustrada daquele lugar (túmulos
+  vazios das Catacumbas, ferreiros das Ruínas, a rainha que congelou o
+  selo Glacial, o dragão carcereiro, o Ent corrompido, a Ordem do Limiar
+  nas Ilhas, a última sentinela da Floresta Morta). Masmorras futuras sem
+  texto próprio simplesmente pulam a visão.
+· Fala do chefe Glacial sem número fixo de selos.
+· 13 ilustrações novas em assets/pixel-art/story/ (*.jpg).
+
+
+CORREÇÕES DO p192 — TRAVAMENTOS
+· JOGO CONGELANDO: um erro em qualquer cena (HUD, menus, fase) parava a
+  atualização e o desenho da tela inteira, obrigando a recarregar. Agora o
+  erro é registrado no console e o jogo continua rodando. Também foi
+  corrigida a consulta de paredes com coordenadas inválidas (causa
+  conhecida de erro na morte de chefes).
+· SALA QUE NÃO LIBERA: se o herói saía de uma sala em combate e entrava em
+  outra, a primeira nunca era concluída (o jogo só conferia a sala atual),
+  e os selos/porta do chefe não abriam. Agora um vigia confere todas as
+  salas ativas: sem inimigos dentro, a sala é concluída; inimigo preso na
+  parede é removido.
+· SALAS COM OBJETIVO (braseiros/totens): cada braseiro ou totem pendente
+  ganha um "!" dourado pulsando em cima; depois de 20 s sem inimigos aparece
+  um aviso; depois de 45 s sem inimigos, o objetivo se completa sozinho
+  (nunca mais trava a fase).
+· Diálogos: um de cada vez (sem sobreposição) e sempre fecham se a fase
+  mudar, devolvendo o controle ao jogador.
+
+
+NOVO NO p191 — HISTÓRIA: A GUARDIÃ E O REI DE VALDRAK
+· SISTEMA DE DIÁLOGO com retrato e expressão (calma, falando, sorrindo,
+  triste, agressiva, especial), texto que se escreve na tela, nome do
+  personagem e brilho atrás do retrato. Avança com Enter/Espaço/E,
+  toque/clique ou botão A do controle. O jogo pausa enquanto
+  alguém fala.
+· A GUARDIÃ (sprite e retratos novos) substitui o Guardião encapuzado:
+    na clareira inicial ela se apresenta ao herói chegar perto;
+    no Coração da Floresta fala ao chegar pela primeira vez;
+    ao voltar de cada masmorra comenta o cristal trazido;
+    as falas mudam pela PORCENTAGEM de selos (início, um quarto, metade,
+    três quartos, todos) — funciona com qualquer número de portais;
+    na primeira conversa o herói responde com uma linha da classe.
+· O REI DE VALDRAK (Aelric), usurpado pelo Observador:
+    aparece em VISÕES (retrato corrompido, roxo) ao passar da metade e
+    dos três quartos dos selos;
+    durante a luta com o Observador a voz dele escapa ("…me ajude… ele
+    não sou eu…");
+    no FINAL o Rei aparece no salão e a Guardiã se revela: ELYNDRA,
+    rainha de Valdrak. Escolha: SELAR DE NOVO (o Rei se perde com o
+    Observador) ou LIBERTAR O REI (o plano de Elyndra; final ambíguo).
+· Textos da história sem número fixo de selos/portais.
+· Arquivos novos em assets/pixel-art/story/ (retratos e sprites).
+· As falas já vistas ficam gravadas por save.
+
+
+NOVO NO p190 — HISTÓRIA (ETAPA 1 DO ROTEIRO)
+· O GUARDIÃO na Sala dos Portais (figura encapuzada com aura roxa).
+  Fale com ele (E): a fala muda a cada cristal de masmorra entregue e
+  fica mais evasiva; na primeira conversa o herói responde com uma
+  linha própria da classe.
+· Falas dos CHEFES: cada sentinela diz uma frase ao aparecer e outra ao
+  cair, com a pista daquela região (Ent, Minotauro, Górgona, Tengu,
+  Golem, Bruxa Raposa, Dragão e o Observador).
+· FINAL DA CAMPANHA: ao vencer o Observador no Castelo, o Guardião se
+  revela como Ereth, o último dos Antigos; o jogador escolhe SELAR DE
+  NOVO ou QUEBRAR O CICLO; segue a TELA DE ENCERRAMENTO com o epílogo
+  linha a linha, nome/classe/nível do herói e "FIM", e depois a tela de
+  vitória. O desfecho escolhido fica gravado.
+
+
+AJUSTES DO p189 — CENÁRIOS NOVOS REFINADOS
+· "Rio Esquecido" agora se chama ILHAS (Cristal das Ilhas, Guardião das
+  Ilhas).
+· Bosque Sombrio, Ilhas e Floresta Morta com 6 salas cada (antes 12).
+· Visual mais realista, no padrão da Floresta:
+    chão em pixel art com manchas de 3 tons, bordas das clareiras
+    orgânicas (sem retângulos), contorno escuro na borda e trilhas de
+    terra com borda irregular e pedrinhas;
+    mata densa com árvores espelhadas e de tons variados, que escurecem
+    conforme se afastam das clareiras; sombras suaves projetadas;
+    árvores da borda desenhadas NA FRENTE do herói (profundidade);
+    tufos, flores e detalhes mais densos perto das bordas;
+    manchas de luz nas clareiras e escuridão crescente na mata.
+· Ilhas: costa orgânica, faixa de areia molhada, água rasa mais clara,
+  espuma em duas linhas, juncos e pedras na margem, vitórias-régias,
+  pontes de tábuas com sombra na água e reflexos animados.
+· Floresta Morta: grama seca acinzentada, névoa arroxeada que se move
+  devagar e luzes fantasmas subindo.
+· Bosque Sombrio: vaga-lumes piscando sobre as clareiras.
+
+
+NOVO NO p188 — 3 NOVAS MASMORRAS
+· BOSQUE SOMBRIO (pack Mapa_Bosque): clareiras de grama cercadas por
+  pinheiros densos, trilhas de terra, pedras, tocos, poço e cabana.
+  Inimigos: goblins, cães de caça, orcs, harpias (+ troll de elite).
+  Chefe: ENT ANCESTRAL.
+· RIO ESQUECIDO (pack mapa_rio): ilhas de grama e pedra ligadas por
+  pontes de madeira sobre o rio, com margem de espuma e reflexos na
+  água. Inimigos: harpias, orcs, goblins arqueiros, demônios
+  conjuradores (+ ciclope de elite). Chefe: SENHOR TENGU.
+· FLORESTA MORTA (pack mapa_floresta_morta): campo sombrio com árvores
+  secas, estátuas, cercas, lápides, ossos, lanternas e criptas.
+  Inimigos: esqueletos, fantasmas, servos necromantes, demônios
+  (+ esqueleto guerreiro de elite). Chefe: BRUXA RAPOSA.
+· Cada uma tem 12 salas, selos do guardião, baús e o cristal no fim:
+  Cristal do Bosque, Cristal do Rio e Cristal das Almas (itens de missão).
+· Sala dos Portais: 3 portais novos espalhados pela clareira. O portal do
+  Castelo agora precisa das 7 masmorras (mostra "x/7").
+· Aba Missão do inventário lista as 7 masmorras.
+· Dificuldade das novas fases segue o nível e o equipamento do herói.
+· Arquivos novos em assets/pixel-art/newmaps/ (objetos e mapas
+  pré-desenhados) e 3 ícones de cristal em assets/pixel-art/castle/.
+
+
+CORREÇÕES DO p187 — CONFIGURAÇÕES, INVENTÁRIO E HABILIDADES
+· Configurações (também na tela inicial): conteúdo centralizado em
+  telas largas; as linhas desceram para não encostar nas abas.
+· Inventário: abas espaçadas pela largura de cada nome (não se
+  sobrepõem mais); coluna do equipamento mais espaçada para os nomes dos
+  espaços não ficarem por baixo do espaço seguinte.
+· Habilidades: a árvore desceu e o subtítulo (classe e nível) não fica
+  mais escondido atrás do primeiro ícone; números dos espaços equipados
+  acima dos quadros (antes ficavam por cima dos ícones); botão de
+  desbloquear sempre abaixo da descrição; texto de ajuda centralizado e
+  ajustado à largura; nome da habilidade ajustado ao espaço.
+
+
+CORREÇÃO DO p186 — TEXTOS DENTRO DOS QUADROS
+· Textos longos agora se ajustam ao espaço (diminuem um pouco e, se ainda
+  não couberem, terminam com "…"): nome da sala no canto, título do
+  minimapa, nome do chefe, nome do herói no HUD, rótulos e valores das
+  Configurações, botões da Pausa, nomes de itens na Loja e o nome do
+  item na dica da Loja.
+· Quebra de linha automática: dica flutuante do inventário (nome, tipo,
+  requisito de classe em linha própria, atributos e comparação), dica da
+  Loja e quadro de objetivo.
+· Rótulos dos espaços do equipamento ajustados à largura.
+· Título das Configurações menor para não encostar nas abas.
+
+
+CORREÇÕES DO p185 — INVENTÁRIO
+· Em telas mais largas que 16:9 (celulares modernos, ultrawide) o
+  inventário, a loja e a árvore de habilidades ficavam encostados à
+  esquerda; agora ficam centralizados.
+· O quadrado dourado de foco ficava no lugar antigo (fora dos espaços);
+  agora acompanha o espaço selecionado.
+· Tirar a seleção do item: tocar/clicar num espaço vazio, fora da janela,
+  ou apertar ESC/B. (Tocar de novo no item selecionado continua usando/
+  equipando.)
+
+
+NOVO NO p184 — TELAS RESTANTES NO ESTILO NOVO
+· Loja do vendedor (e a confirmação de compra), Árvore de habilidades,
+  Hall da Fama e detalhes da tela de resultado com a janela escura do
+  pacote novo; botões em vermelho (inclusive Derrota/Vitória).
+· Portal do Castelo afastado da estátua grande na Sala dos Portais.
+· Correção: os cristais (itens de missão) podiam aparecer à venda na loja.
+
+
+NOVO NO p183 — INTERFACE NOVA COMPLETA (itens das prévias)
+· Inventário com ABAS: EQUIPAMENTO (herói grande no centro com os espaços
+  de equipamento em volta, mochila à direita), ATRIBUTOS (todos os
+  atributos em lista) e MISSÃO (cristais esmeralda, masmorras concluídas
+  e situação do Castelo). Troca de aba por clique ou Q/E (LB/RB no
+  controle). A dica do item agora é um quadro flutuante ao lado do item
+  selecionado, com comparação com o equipado.
+· Configurações com ABAS NO TOPO (Geral, Áudio, Tela, Controles, Toque)
+  e título centralizado.
+· Barra do chefe com moldura de pincel do pacote novo.
+· Quadro de objetivo (selos, horda, chave...) em caixa escura com
+  destaque vermelho.
+
+
+NOVO NO p182 — INVENTÁRIO, PAUSA E CONFIGURAÇÕES NO ESTILO NOVO
+· Inventário: janela escura com textura de pincel e cabeçalho vermelho;
+  espaços escuros arredondados com brilho na cor da raridade do item;
+  botões Equipar/Descartar em vermelho.
+· Pausa: mesma janela, botões com pincelada (o selecionado fica vermelho).
+· Configurações: painel escuro, categoria selecionada em vermelho, volumes
+  com barra deslizante (trilho, preenchimento vermelho e alça) e
+  porcentagem.
+· Imagens novas em assets/pixel-art/ui2/ (ui2-win, ui2-hdr, ui2-btn,
+  ui2-btn-sel, ui2-tabglow).
+
+
+NOVO NO p181 — HUD COM O PACOTE "RPG MMO UI" (etapa 1: tela de jogo)
+· PC/controle: vida e recurso viraram GLOBOS (vermelho à esquerda, cor do
+  recurso à direita) dos lados da nova barra de ações, com molduras novas
+  nos espaços de habilidade e barra de XP dourada. Em cima, à esquerda, só
+  retrato do herói, nome, nível e ouro (sem repetir a vida).
+· Celular: quadro compacto com vida e recurso no topo (lá não há barra
+  inferior), joystick e botões de toque com a arte nova.
+· Minimapa com moldura escura e borda dourada.
+· Imagens em assets/pixel-art/ui2/ (pré-redimensionadas e suavizadas).
+· Próximas etapas: inventário e menus (pausa/configurações) no mesmo estilo.
+
+
+AJUSTES DO p180 — DIFICULDADE E ITENS
+· Masmorras (Catacumbas, Ruínas, Glacial, Fortaleza) e Castelo ficam mais
+  difíceis a cada nível do herói e conforme ele fica mais forte
+  (atributos + equipamento). Os limites antigos foram tirados: inimigos
+  chegam a ~8x a vida e ~4,5x o dano base; chefes ~10x a vida, ~5,5x o
+  dano, atacam mais rápido e resistem mais.
+  Exemplo (Esqueleto Guerreiro): nível 1 = 4 de vida; nível 10 = 11
+  (15 bem equipado); nível 20 = 22 (32 bem equipado).
+· Itens bem mais escassos:
+    inimigos comuns: chance de item -63%;
+    elites: deixam item em ~35% das vezes (antes sempre);
+    baús: metade dos itens (mínimo 1);
+    chefes: item garantido mantido, item extra com 40% da chance;
+    poções caídas: 3% (antes 5%).
+
+
+AJUSTE DO p179 — PORTAIS FIXOS
+· A folha de animação do portal tinha os quadros desalinhados (cada quadro
+  com o portal num lugar diferente), então ele "andava" e pulava. Os
+  quadros foram recortados e alinhados (assets/pixel-art/hub/hub-portal2.png)
+  e os portais agora ficam parados, só brilhando: um brilho suave pulsando
+  na cor de cada masmorra, sem tremor de luz. Selados/adormecidos ficam
+  apagados.
+
+
+CORREÇÃO DO p178 — FLORESTA TRAVADA
+· Um dos 3 Cristais Esmeralda estava no Jardim Escondido, que é uma sala
+  secreta acessível só pelo Coração da Floresta (que fica selado até ter
+  os 3 cristais) — impossível de completar. O terceiro cristal (e o troll
+  de elite que o guarda) agora fica nas OSSADAS (canto direito).
+  Cristais: Bosque (esquerda), Caverna de Cristal (alto, à esquerda) e
+  Ossadas (direita). O Jardim continua como sala secreta do Coração.
+· O selo do Coração agora mostra quais clareiras ainda têm cristal.
+
+
+CORREÇÃO DO p177 — SPRITES NOVOS NÃO APARECIAM NO SITE (GitHub Pages)
+· Os sprites novos (Arqueiro, Maga, Ladina, chefes, portal) usam os
+  mesmos nomes de arquivo dos antigos. O navegador/cache do site
+  continuava entregando as imagens antigas guardadas, mesmo com o código
+  novo (por isso o nome "Arthelia" aparecia com o desenho antigo).
+· Agora TODO arquivo carregado pelo jogo leva a versão no endereço
+  (ex.: mage-pack-body.png?v=p177). A cada versão nova o navegador é
+  obrigado a baixar as imagens de novo — não fica mais preso em sprite
+  antigo.
+
+
+CORREÇÃO DO p176 — SPRITES QUE NÃO APARECIAM NA FLORESTA
+· Desde o p173 a Floresta deixou de desenhar parte dos sprites: as árvores
+  da frente (ficavam só as sombras escuras no chão), a água do riacho do
+  Acampamento (ficava só o contorno marrom da margem), a ponte e os
+  reflexos do lago. Era um trecho de código apagado por engano junto com
+  a troca das armadilhas do Castelo. Restaurado.
+· Varredura feita em todas as fases (Floresta, Castelo, Catacumbas,
+  Ruínas, Glacial e Fortaleza): nenhuma textura faltando e nenhum arquivo
+  com erro de carregamento.
+
+
+NOVO NO p175 — SPRITES NOVOS
+· HERÓIS COM NOME: Draven (Guerreiro), Vaelen (Arqueiro), Arthelia (Maga),
+  Seris (Ladina), Valthor (Necromante), Akihiro (Samurai), Kael (Caçador)
+  e Tharion (Druida). O nome aparece grande na escolha de classe (com a
+  classe e o recurso logo abaixo) e no lugar de "PRÉVIA" no inventário.
+· ARQUEIRO (Vaelen) com sprite novo; MAGA (Arthelia) com sprite novo; a
+  LADINA (Seris) voltou à escolha de classe, com sprite novo (classe
+  liberada desde o início).
+· CHEFES NOVOS:
+    Dragão Ancião → dragão novo (Fortaleza).
+    Golem de Gelo → novo chefe da Cidadela Glacial (antes Sentinela do Gelo).
+    O Observador → novo chefe do Castelo de Valdrak.
+· SALA DOS PORTAIS: portais com o sprite novo animado (14 quadros),
+  espalhados pelo Coração da Floresta (não mais em fila), cada um com
+  brilho da cor da masmorra. O portal do Castelo é maior e fica no alto
+  da clareira; adormecido (cinza) até concluir as 4 masmorras. Portais
+  concluídos ficam cinza com "✦ SELADO ✦".
+
+AJUSTES DO p174 (CASTELO)
+· Tapetes só onde fazem sentido: Sala do Trono, Antecâmara, Galerias e
+  Portão. Corredores e demais salas ficam sem tapete (sem pedaços soltos
+  ou desconectados).
+· Tapete no mesmo estilo do tapete do estrado (vermelho com duas faixas
+  douradas em cada borda, sem losangos), contínuo e reto pelo eixo da sala.
+· Sala do Trono como na referência: estrado encostado na parede do fundo,
+  trono em cima do patamar superior (colisão no trono), o tapete do
+  estrado continua direto no tapete do chão, cavaleiros simétricos dos
+  dois lados, escudos e vitral na parede.
+
+
+COMO JOGAR
+  Windows: dê dois cliques em INICIAR-JOGO.bat (abre o servidor local e o
+  navegador). Ou, com Node.js instalado: "node server.cjs" e abra o endereço
+  que aparecer. Não abra o index.html direto do disco.
+
+NOVO NESTA VERSÃO (p173) — NOVA ESTRUTURA DA CAMPANHA
+· FLORESTA VIRA O MAPA CENTRAL: o dragão saiu da Floresta. O Coração da
+  Floresta (antiga área do dragão) começa fechado por um SELO DA FLORESTA
+  (espinheiros roxos com o contador de cristais).
+· 3 CRISTAIS ESMERALDA nos cantos (Bosque, Caverna de Cristal e Jardim
+  Escondido), cada um protegido por um TROLL DE ELITE com 3 afixos. Ao
+  vencer a sala, o cristal aparece no chão; com os 3, o selo se desfaz.
+· SALA DOS PORTAIS (Coração da Floresta): 4 portais — Catacumbas, Ruínas,
+  Cidadela Glacial e Fortaleza do Dragão — em qualquer ordem, e o PORTAL
+  MAIOR do Castelo de Valdrak no canto, adormecido até as 4 masmorras
+  serem concluídas.
+· Cada masmorra é jogada inteira (salas, selos, objetivos, chefe). Após o
+  chefe surge um CRISTAL ANTIGO; ao pegá-lo o herói volta à Sala dos
+  Portais (a Floresta fica em paz, sem inimigos) e aquele portal fica
+  SELADO. O Castelo é a fase final (vitória da campanha).
+· Os 7 cristais são ITENS DE MISSÃO: não podem ser vendidos nem
+  descartados (não aparecem na aba Vender da loja).
+· DIFICULDADE: nas 4 masmorras e no Castelo, inimigos e chefes escalam
+  pelo NÍVEL DO HERÓI e pelo EQUIPAMENTO usado (o Difícil continua por
+  cima). A Floresta mantém a dificuldade inicial.
+· INVENTÁRIO: atributos completos — dano, dano mágico, defesa, vida,
+  velocidade, crítico + nível, XP, ataques por segundo, bloqueio,
+  recurso e ouro.
+· CASTELO: armadilhas refeitas (placa de pressão + espinhos) espalhadas
+  pelas salas e corredores (93 no total); disparam ao pisar (a placa
+  treme, os espinhos sobem, tiram 1 de vida e recolhem). Tapetes em cruz
+  ligando todas as entradas das salas, sem pedaços soltos; o trono agora
+  fica no estrado, alinhado ao tapete.
+· ESPINHOS DA FLORESTA: antes, se o herói estivesse parado na entrada no
+  momento em que a clareira trancava, aquele trecho ficava sem espinho e
+  dava para sair. Agora todas as saídas recebem espinhos (mais largos) e o
+  herói é empurrado para dentro da clareira.
+· CHEFES ANTERIORES DE VOLTA: Dragão Ancião vermelho (Fortaleza) e o
+  Senhor Corvo de Valdrak (Castelo).
+· Observação: saves em andamento de versões anteriores continuam
+  abrindo na fase em que estavam; ao concluir uma masmorra, o herói vai
+  para a Floresta e precisa dos 3 cristais esmeralda para abrir a Sala
+  dos Portais.
+
+NOVO NESTA VERSÃO (p172) — NOVA FORMA DE JOGAR A CAMPANHA
+· Cada mapa da Campanha agora é montado com papéis de sala variados,
+  sorteados por uma semente salva junto com o jogo (mesmo save = mesmo
+  mapa; campanha nova = combinação nova):
+    - OBJETIVO: acender braseiros, destruir totens profanos (cada totem
+      quebrado liberta um guardião) ou resistir à horda por tempo. Nessas
+      salas matar todo mundo não basta: a sala só abre com o objetivo feito.
+    - ELITE: um inimigo de elite com afixo; o baú da sala só abre depois
+      da vitória.
+    - EXPLORAÇÃO: poucos ou nenhum inimigo, uma inscrição para examinar
+      (pedaço da história + um pouco de ouro) e, às vezes, um altar de
+      evento ou um mercador.
+    - EMBOSCADA: quando a sala parece limpa, chega uma segunda onda.
+    - CÂMARA DO TESOURO: sala trancada; a chave sai de outra sala de
+      desafio.
+· SELOS DO GUARDIÃO: nos mapas com portas, o salão do chefe começa
+  selado. Basta romper parte dos selos (ex.: 2 de 3, 3 de 4) — o jogador
+  escolhe a rota (elite = mais perigo e baú melhor; objetivo; exploração).
+  As salas restantes passam a ser opcionais: o mapa termina ao vencer o
+  chefe.
+· Cada bioma tem seu perfil (tipos de objetivo, quantidade de exploração,
+  eventos, mercador, chave). A Floresta não tem portas, então não usa selos
+  nem chave.
+· Validação: toda sala trancada é checada por caminho a partir do início;
+  se trancar puder isolar o chefe, a chave ou um selo, aquele recurso não
+  é usado naquele mapa (sem softlock).
+· Indicador no canto superior direito (abaixo do nome da sala) mostra o
+  objetivo atual, os selos ou a chave.
+· Saves antigos continuam abrindo (usam uma semente fixa). O Modo Infinito
+  não muda.
+· MODO TRAVESSIA: continua no código, mas fica fora do Menu Principal por
+  enquanto (constante __TRAV_MENU no bundle).
+· Árvores: as copas cortadas que estavam pintadas no fundo pré-renderizado
+  da Floresta (frb-*) foram completadas, com a mesma iluminação do fundo.
+
+NOVO NA VERSÃO p171
+· MODO TRAVESSIA (ALPHA) no Menu Principal (PT/EN/ES), logo abaixo do
+  Modo Infinito. Usa a tela de seleção de classe de sempre (todas as
+  classes liberadas, sem dificuldade), sorteia uma dimensão e não mexe em
+  save nenhum. Pausa e fim da travessia têm CONTINUAR / JOGAR NOVAMENTE /
+  VOLTAR AO MENU (teclado, mouse, toque e controle). No toque há um botão
+  de pausa (II) no canto superior direito.
+· A Campanha não entra mais na Travessia: o portal da Floresta leva direto
+  ao Castelo, como antes do sistema de dimensões.
+· Árvores corrigidas:
+    - As variantes de cor das árvores da Floresta (frt-*-422/835 e
+      fr-tree6/7) estavam recortadas com o quadro errado: copa cortada em
+      cima e tronco "flutuando" ~10 px acima da sombra. Foram refeitas a
+      partir da árvore base, alinhadas na mesma base.
+    - Árvores grandes (fp-tree/autumn/mega/burned -v2): copa cortada no
+      topo, sombra cortada embaixo e, no pinheiro, sombra longe do tronco.
+      Copas completadas e sombras recentralizadas no pé do tronco.
+    - Código: a detecção da base do sprite ignorava a sombra
+      semitransparente como se fosse o chão; agora usa só pixels opacos.
+      Assim posição, profundidade (y-sort) e colisão ficam no tronco.
+    - Travessia (Ilhas do Céu): árvore e arbusto com laterais cortadas.
+  Obs.: as árvores do fundo pré-renderizado (frb-*) foram tratadas na p172.
+
+NOVO NA VERSÃO ANTERIOR (p170)
+· CHEFES NOVOS (sprites do pack de esqueletos):
+    Dragão Ancião → agora é o DRAGÃO DE OSSOS (alado, branco), na
+      Fortaleza e no primeiro encontro da Floresta; mesmos ataques e fases.
+    Castelo de Valdrak → REI ESQUELETO DE VALDRAK, sentado no trono do
+      estrado. Ele não se move; ataca quem chega perto, solta ondas de
+      choque e INVOCA FANTASMAS E ESQUELETOS pelo salão (a cada ~6,5 s;
+      na fase 2, a cada ~4 s e dois por vez; até 5/7 ao mesmo tempo).
+      Ao morrer, os lacaios dele se desfazem.
+  Como o pack só tem imagens paradas, as animações (respirar, preparar,
+  golpe, dano, fase, morte virando pilha de ossos, voo) foram geradas a
+  partir delas.
+· Pasta assets/video limpa: ficaram só os vídeos em uso (intro,
+  intro_campanha e modo_infinito).
+
+HISTÓRICO
+DEPTHGATE v1.23 — ARQUIVOS ATUALIZADOS E NOVOS
+==============================================
+(versão exibida na capa/menu inicial: v1.23)
+
+Apenas os arquivos NOVOS/ATUALIZADOS. Aplique por cima do jogo
+publicado (que já precisa ter as atualizações anteriores — pasta
+DEPTHGATE-WEB-ATUALIZACOES ou DEPTHGATE-WEB-COMPLETO).
+
+NOVO — MOVIMENTAÇÃO APRIMORADA NA TRAVESSIA
+· AGACHAR: segurar BAIXO — o herói assume a postura de guarda da sua
+  classe, a hitbox reduz à metade (dá para esquivar de flechas) e ele
+  anda devagar. Novo botão ▼ nos controles de toque.
+· PULO com squash & stretch: o corpo alonga no impulso e achata na
+  aterrissagem (sensação de peso), com poses de subida/queda.
+· DASH com pose própria de investida da classe (funciona também NO AR).
+· Texto de introdução ganhou a frase em destaque:
+  "Aqui você é uma sombra daquilo que já foi." (PT/EN/ES)
+
+NOVO — IDENTIDADE SONORA 16-BIT (OST COMPLETA)
+· Trilha sonora original estilo SNES/Mega Drive gerada em tempo real por
+  um sequenciador chiptune próprio (zero arquivos de áudio, zero peso).
+· 15 músicas: menu, seleção de herói, floresta, catacumbas, ruínas,
+  fortaleza, cidadela glacial, endless, mercador, refúgio, travessia e
+  4 temas de boss.
+· LEITMOTIV DO DRAGÃO: apresentado no 1º encontro e EVOLUÍDO (mais
+  rápido e dramático) no confronto final.
+· Música ADAPTATIVA: camadas de combate entram/saem conforme o perigo,
+  sem reiniciar a faixa. Loops perfeitos, crossfade entre cenas.
+· 8 stingers: vitória, boss derrotado, level up, nova habilidade, nova
+  classe, tesouro, portal (assinatura recorrente) e derrota.
+· CONFIGURAÇÕES ganhou Volume da Interface e Mudo (tudo salvo).
+
+CONTEÚDO DE HOJE — NOVO SISTEMA: DIMENSÕES DE TRAVESSIA
+· TODOS os portais da campanha levam a uma DIMENSÃO DE TRAVESSIA:
+  fase especial 2D de plataforma com câmera lateral, gravidade, coyote
+  time, jump buffer e salto de altura variável (segurar = mais alto).
+  Os tipos se alternam entre um portal e outro.
+· 2 tipos, ambos construídos com os packs fornecidos:
+  - BURGO SOMBRIO (pack "GothicVania Town"): cidade gótica ao entardecer,
+    casas/igreja no fundo, chão de pedra, lampiões, barris, caixas,
+    poço, carroça e placas.
+  - BOSQUE DA MEIA-NOITE (pack "Final"): céu noturno com lua, igreja com
+    janelas acesas, lápides, árvore gigante, plataformas de grama e
+    passarelas de pedra, cercas de ferro e arbustos.
+· CENÁRIO COMPLETO (não suspenso): o chão preenche até a base da tela
+  (folhagem/tijolos) e as passarelas elevadas são sustentadas por
+  PILARES até o solo — como nas imagens de referência do pack. Só as
+  plataformas móveis e as que desabam continuam soltas (mecanismos).
+· Geração procedural por seções com validação física — nenhum salto
+  impossível (1000 gerações testadas, 0 falhas).
+· Armadilhas: espinhos, plataformas que desabam, plataformas móveis,
+  atiradores com telegraph. Poucos inimigos, adaptados à lateral.
+· Segredos com baús + moedas; recompensa final proporcional à
+  profundidade; cair no abismo = 1 HP + volta ao checkpoint; morrer
+  devolve à campanha sem recompensa.
+· XP/ouro/inventário/save 100% preservados no retorno à campanha.
+· Introdução narrativa na 1ª entrada (persistida no save). PT/EN/ES.
+· Controles: teclado (A/D mover · W/↑ pular · ESPAÇO atacar · SHIFT
+  dash · Q poção), gamepad (A pular · X/RT atacar) e layout touch
+  próprio de plataforma.
+
+ARQUIVOS:
+· index.html ................. aponta para o bundle novo
+· sw.js ...................... service worker (cache ded-web-v1.5.6)
+· assets/index-*.js .......... código do jogo com o novo sistema
+· assets/ControlsPanel-*.js
+· assets/pixel-art/traversal/  33 imagens dos packs GothicVania + Final
+
+Como aplicar: copie o conteúdo desta pasta por cima do jogo publicado,
+substituindo os existentes. Depois recarregue com Ctrl+F5.
+
+Obs.: as pastas DEPTHGATE-WEB-COMPLETO (jogo inteiro) e
+DEPTHGATE-WEB-ATUALIZACOES (delta consolidado com TODAS as novidades
+recentes) também já estão atualizadas com isto.

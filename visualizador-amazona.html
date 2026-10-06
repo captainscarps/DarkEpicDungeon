@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DEPTHGATE — Comparativo Guerreira Indígena</title>
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
+  <style>
+    :root {
+      --bg: #0a0806;
+      --panel: #16110b;
+      --border: #3d2e1a;
+      --gold: #c9a24a;
+      --gold-light: #e8d9a0;
+      --text: #dfd5c2;
+      --dim: #8a7f66;
+      --urucum: #da261e;
+      --arara: #1c7deb;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: Georgia, 'Times New Roman', serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 16px;
+    }
+    h1 {
+      font-size: 24px;
+      letter-spacing: 3px;
+      color: var(--gold-light);
+      text-shadow: 0 0 16px rgba(201, 162, 74, 0.4);
+      margin-bottom: 4px;
+    }
+    p.sub {
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      color: var(--dim);
+    }
+    #canvas-wrap {
+      border: 2px solid var(--border);
+      box-shadow: 0 0 30px rgba(0,0,0,0.8), 0 0 15px rgba(201,162,74,0.15);
+      border-radius: 6px;
+      overflow: hidden;
+      background: #000;
+      margin-bottom: 14px;
+    }
+    #canvas-wrap canvas {
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      display: block;
+    }
+    .controls {
+      max-width: 860px;
+      width: 100%;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .ctrl-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+    .ctrl-label {
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      font-weight: bold;
+      color: var(--gold);
+      min-width: 90px;
+      text-transform: uppercase;
+    }
+    .btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    button {
+      background: #241b12;
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      font-weight: bold;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    button:hover {
+      background: #3a2b1c;
+      border-color: var(--gold);
+      color: #fff;
+    }
+    button.active {
+      background: var(--gold);
+      border-color: #fff;
+      color: #0d0a06;
+      box-shadow: 0 0 10px rgba(201,162,74,0.5);
+    }
+    .features-card {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+      margin-top: 6px;
+      padding-top: 10px;
+      border-top: 1px dashed var(--border);
+      font-size: 12px;
+    }
+    .feat {
+      background: rgba(0,0,0,0.3);
+      padding: 8px;
+      border-radius: 4px;
+      border-left: 3px solid var(--gold);
+    }
+    .feat.urucum { border-color: var(--urucum); }
+    .feat.arara { border-color: var(--arara); }
+    .feat strong { display: block; color: #fff; margin-bottom: 2px; }
+    .nav-links {
+      margin-top: 14px;
+      display: flex;
+      gap: 14px;
+      font-size: 13px;
+    }
+    .nav-links a {
+      color: var(--gold);
+      text-decoration: none;
+      border-bottom: 1px solid var(--gold);
+      padding-bottom: 2px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>GUERREIRA INDÍGENA BRASILEIRA</h1>
+    <p class="sub">DEPTHGATE — Comparativo Lado a Lado (Original vs. Povos Originários)</p>
+  </header>
+
+  <div id="canvas-wrap"></div>
+
+  <div class="controls">
+    <div class="ctrl-row">
+      <span class="ctrl-label">Animação:</span>
+      <div class="btn-group" id="anim-btns"></div>
+    </div>
+
+    <div class="ctrl-row">
+      <span class="ctrl-label">Zoom:</span>
+      <div class="btn-group">
+        <button onclick="setZoom(1.5)">1.5x</button>
+        <button onclick="setZoom(2.2)" class="active" id="z2">2.2x</button>
+        <button onclick="setZoom(3.0)">3.0x</button>
+        <button onclick="setZoom(4.0)">4.0x (Detalhe)</button>
+      </div>
+      <span class="ctrl-label" style="min-width: 60px; margin-left: 10px;">Veloc.:</span>
+      <div class="btn-group">
+        <button onclick="setSpeed(0.4)">0.4x (Câmera Lenta)</button>
+        <button onclick="setSpeed(1.0)" class="active" id="s1">1.0x (Normal)</button>
+        <button onclick="setSpeed(1.5)">1.5x</button>
+      </div>
+    </div>
+
+    <div class="ctrl-row">
+      <span class="ctrl-label">Vestimenta:</span>
+      <div class="btn-group">
+        <button onclick="setOutfit('folhas')" class="active" id="btn-folhas">🌿 Com Folhas Verdes (Novo)</button>
+        <button onclick="setOutfit('fibras')" id="btn-fibras">🌾 Fibras Naturais</button>
+      </div>
+    </div>
+
+    <div class="ctrl-row">
+      <span class="ctrl-label">Cenário:</span>
+      <div class="btn-group">
+        <button onclick="setBg('arena')" class="active" id="bg-arena">Arena Sombria</button>
+        <button onclick="setBg('forest')" id="bg-forest">Floresta com Partículas 2.5D</button>
+      </div>
+    </div>
+
+    <div class="features-card">
+      <div class="feat urucum">
+        <strong>🔴 Pintura de Urucum</strong>
+        Faixa vermelho-viva nos olhos e bochechas tradicional das guerreiras indígenas.
+      </div>
+      <div class="feat">
+        <strong>⚫ Grafismos de Jenipapo</strong>
+        Padrões geométricos em preto/carvão nos membros e pulsos.
+      </div>
+      <div class="feat arara">
+        <strong>🦜 Penas de Arara Canindé</strong>
+        Adornos em azul celeste e amarelo ouro vibrantes da fauna brasileira.
+      </div>
+      <div class="feat">
+        <strong>🌾 Pele & Fibras de Tucum</strong>
+        Tom de pele bronzeado acobreado com vestimenta em fibra e palha natural.
+      </div>
+    </div>
+  </div>
+
+  <div class="nav-links">
+    <a href="./index.html">← Voltar ao Jogo DepthGate</a>
+  </div>
+
+  <script>
+    const ANIMS = [
+      { key: "Idle", name: "Parada (Idle)", frames: 6, fps: 7 },
+      { key: "Idle_2", name: "Guarda (Idle 2)", frames: 5, fps: 6 },
+      { key: "Walk", name: "Andando", frames: 10, fps: 10 },
+      { key: "Run", name: "Correndo", frames: 10, fps: 12 },
+      { key: "Attack_1", name: "Ataque Rápido", frames: 5, fps: 11 },
+      { key: "Attack_2", name: "Golpe Pesado", frames: 3, fps: 8 },
+      { key: "Special", name: "Especial", frames: 5, fps: 9 },
+      { key: "Jump", name: "Pulo", frames: 11, fps: 10 },
+      { key: "Hurt", name: "Dano", frames: 4, fps: 8 },
+      { key: "Dead", name: "Morte", frames: 4, fps: 6 }
+    ];
+
+    let currentAnim = "Idle";
+    let currentZoom = 2.2;
+    let currentSpeed = 1.0;
+    let currentBg = "arena";
+    let phaserGame = null;
+    let mainScene = null;
+
+    // Constrói botões de animação
+    const animWrap = document.getElementById("anim-btns");
+    ANIMS.forEach((a, i) => {
+      const btn = document.createElement("button");
+      btn.innerText = a.name;
+      if (i === 0) btn.classList.add("active");
+      btn.onclick = () => {
+        document.querySelectorAll("#anim-btns button").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        playAnim(a.key);
+      };
+      animWrap.appendChild(btn);
+    });
+
+    class CompareScene extends Phaser.Scene {
+      constructor() { super("CompareScene"); }
+
+      preload() {
+        // Carrega spritesheets: original, indigena basica e com folhas verdes
+        ANIMS.forEach(a => {
+          this.load.spritesheet(`orig-${a.key}`, `assets/pixel-art/characters/amazona_original/${a.key}.png`, {
+            frameWidth: 128, frameHeight: 128
+          });
+          this.load.spritesheet(`folhas-${a.key}`, `assets/pixel-art/characters/amazona_indigena_folhas/${a.key}.png`, {
+            frameWidth: 128, frameHeight: 128
+          });
+          this.load.spritesheet(`indi-${a.key}`, `assets/pixel-art/characters/amazona_indigena/${a.key}.png`, {
+            frameWidth: 128, frameHeight: 128
+          });
+        });
+
+        // Carrega fundo da história se disponível
+        this.load.image("bg-pr1", "assets/pixel-art/story/pr-1.jpg");
+      }
+
+      create() {
+        mainScene = this;
+        const W = 840, H = 360;
+
+        // Fundo
+        this.bgRect = this.add.rectangle(W/2, H/2, W, H, 0x110d09);
+        this.bgImg = this.add.image(W/2, H/2, "bg-pr1").setOrigin(0.5).setAlpha(0);
+        this.bgShade = this.add.rectangle(W/2, H/2, W, H, 0x000000, 0.45).setVisible(false);
+
+        // Chão e grid
+        this.ground = this.add.rectangle(W/2, 290, W, 2, 0xc9a24a, 0.4);
+        
+        // Colunas e rótulos
+        this.labelOrig = this.add.text(W * 0.28, 40, "AMAZONA ORIGINAL\n(Fantasia Genérica)", {
+          fontFamily: "Georgia, serif", fontSize: "14px", fontStyle: "bold",
+          color: "#8a7f66", align: "center", stroke: "#000", strokeThickness: 3
+        }).setOrigin(0.5);
+
+        this.labelIndi = this.add.text(W * 0.72, 40, "GUERREIRA INDÍGENA\n(Urucum · Jenipapo · Arara)", {
+          fontFamily: "Georgia, serif", fontSize: "14px", fontStyle: "bold",
+          color: "#ffd24a", align: "center", stroke: "#000", strokeThickness: 3
+        }).setOrigin(0.5);
+
+        // Sprites
+        const groundY = 290;
+        this.origSprite = this.add.sprite(W * 0.28, groundY, "orig-Idle").setOrigin(0.5, 1).setScale(currentZoom);
+        this.indiSprite = this.add.sprite(W * 0.72, groundY, "indi-Idle").setOrigin(0.5, 1).setScale(currentZoom);
+
+        // Sombras suaves
+        this.add.ellipse(W * 0.28, groundY + 2, 60, 14, 0x000000, 0.45);
+        this.add.ellipse(W * 0.72, groundY + 2, 60, 14, 0x000000, 0.45);
+
+        // Cria animações
+        ANIMS.forEach(a => {
+          this.anims.create({
+            key: `play-orig-${a.key}`,
+            frames: this.anims.generateFrameNumbers(`orig-${a.key}`, { start: 0, end: a.frames - 1 }),
+            frameRate: a.fps * currentSpeed,
+            repeat: -1
+          });
+          this.anims.create({
+            key: `play-indi-${a.key}`,
+            frames: this.anims.generateFrameNumbers(`indi-${a.key}`, { start: 0, end: a.frames - 1 }),
+            frameRate: a.fps * currentSpeed,
+            repeat: -1
+          });
+          this.anims.create({
+            key: `play-folhas-${a.key}`,
+            frames: this.anims.generateFrameNumbers(`folhas-${a.key}`, { start: 0, end: a.frames - 1 }),
+            frameRate: a.fps * currentSpeed,
+            repeat: -1
+          });
+        });
+
+        // Partículas de vaga-lumes da floresta
+        this.particles = [];
+        for (let i = 0; i < 20; i++) {
+          const p = this.add.circle(Math.random() * W, Math.random() * H, 1.2 + Math.random() * 1.5, 0xffd24a, 0.3);
+          p.setBlendMode(Phaser.BlendModes.ADD);
+          p.setVisible(false);
+          this.particles.push(p);
+          this.tweens.add({
+            targets: p,
+            y: p.y - 25 - Math.random() * 25,
+            x: p.x + (Math.random() - 0.5) * 30,
+            alpha: { from: 0.1, to: 0.8 },
+            duration: 2200 + Math.random() * 2000,
+            repeat: -1, yoyo: true, ease: "Sine.easeInOut"
+          });
+        }
+
+        // Toca animação inicial
+        playAnim(currentAnim);
+      }
+    }
+
+    let currentOutfit = "folhas";
+
+    function setOutfit(outfit) {
+      currentOutfit = outfit;
+      document.getElementById("btn-folhas").classList.toggle("active", outfit === "folhas");
+      document.getElementById("btn-fibras").classList.toggle("active", outfit === "fibras");
+      playAnim(currentAnim);
+    }
+
+    function playAnim(key) {
+      currentAnim = key;
+      if (!mainScene) return;
+      mainScene.origSprite.play(`play-orig-${key}`, true);
+      const prefix = currentOutfit === "folhas" ? "play-folhas-" : "play-indi-";
+      mainScene.indiSprite.play(`${prefix}${key}`, true);
+    }
+
+    function setZoom(z) {
+      currentZoom = z;
+      if (!mainScene) return;
+      mainScene.origSprite.setScale(z);
+      mainScene.indiSprite.setScale(z);
+      document.querySelectorAll(".controls .ctrl-row:nth-child(2) button").forEach(b => {
+        if (b.innerText.startsWith(z + "x")) b.classList.add("active");
+        else if (!b.innerText.includes("Câmera") && !b.innerText.includes("Normal") && !b.innerText.includes("1.5x")) b.classList.remove("active");
+      });
+    }
+
+    function setSpeed(spd) {
+      currentSpeed = spd;
+      if (!mainScene) return;
+      ANIMS.forEach(a => {
+        const animOrig = mainScene.anims.get(`play-orig-${a.key}`);
+        const animIndi = mainScene.anims.get(`play-indi-${a.key}`);
+        if (animOrig) animOrig.frameRate = a.fps * spd;
+        if (animIndi) animIndi.frameRate = a.fps * spd;
+      });
+      playAnim(currentAnim);
+    }
+
+    function setBg(bg) {
+      currentBg = bg;
+      if (!mainScene) return;
+      const isForest = bg === "forest";
+      mainScene.bgImg.setAlpha(isForest ? 0.75 : 0);
+      mainScene.bgShade.setVisible(isForest);
+      mainScene.particles.forEach(p => p.setVisible(isForest));
+      document.getElementById("bg-arena").classList.toggle("active", !isForest);
+      document.getElementById("bg-forest").classList.toggle("active", isForest);
+    }
+
+    // Inicialização do Phaser
+    const config = {
+      type: Phaser.AUTO,
+      width: 840,
+      height: 360,
+      parent: "canvas-wrap",
+      backgroundColor: "#0d0a06",
+      scene: CompareScene
+    };
+    phaserGame = new Phaser.Game(config);
+  </script>
+</body>
+</html>

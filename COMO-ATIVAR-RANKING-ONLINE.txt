@@ -1,0 +1,32 @@
+DEPTHGATE — COMO ATIVAR O HALL DA FAMA ONLINE E O DESAFIO DIÁRIO
+(leva uns 5 minutos, só uma vez)
+
+1) CRIAR A TABELA NO SUPABASE
+   - Entre em https://supabase.com e abra o projeto do DepthGate.
+   - Menu da esquerda: "SQL Editor" > "New query".
+   - Abra o arquivo supabase-ranking.sql, copie TUDO, cole e clique em "Run".
+   - Deve aparecer "Success". Isso cria a tabela "scores" com as regras de
+     segurança: qualquer jogador pode LER o ranking e ENVIAR pontuação,
+     mas ninguém pode editar ou apagar pontuações.
+
+2) PEGAR A CHAVE PÚBLICA
+   - Menu da esquerda: "Project Settings" (engrenagem) > "API"
+     (ou "Data API" / "API Keys", conforme a versão do painel).
+   - Copie a "Project URL" (ex.: https://gzfcheiqazykbkjhrltt.supabase.co)
+   - Copie a chave "anon public" (também chamada de "publishable key").
+     NÃO use a chave "service_role"/"secret" — essa nunca vai no site.
+
+3) COLOCAR NO JOGO
+   - Abra assets/online-config.json e troque COLE_AQUI_A_ANON_KEY pela
+     chave copiada (e confira a URL). Exemplo:
+       {
+         "url": "https://gzfcheiqazykbkjhrltt.supabase.co",
+         "anonKey": "eyJhbGciOi...."
+       }
+   - Envie esse arquivo para o GitHub junto com o resto.
+
+Pronto. Sem a chave, o jogo funciona normal: o Hall da Fama mostra só o
+ranking local e as abas online avisam que estão indisponíveis.
+
+É seguro deixar a chave "anon" no site: ela é feita para ser pública; o
+que protege os dados são as regras do passo 1.
