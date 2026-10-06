@@ -1,8 +1,12 @@
-DEPTHGATE — PATCH p207 (sobre a p206)
+DEPTHGATE — PATCH p208 (sobre a p207)
 
-Envie/copie: index.html, sw.js (cache ded-web-v1.43.1),
-assets/index-D6qIWtA7-p207.js e assets/ControlsPanel-kYdEPlgz-p207.js.
-Pode apagar os arquivos -p206.js.
+Envie/copie mantendo as pastas:
+  index.html, sw.js (cache ded-web-v1.44.0)
+  assets/index-D6qIWtA7-p208.js, assets/ControlsPanel-kYdEPlgz-p208.js
+  assets/pixel-art/characters/shaman-pack*  (Araí)
+  assets/pixel-art/bosses/boss-anhanga.png, boss-guardian-fallen.png
+  assets/pixel-art/newmaps/am-*.png e bqb-* (mapa das Profundezas Amazônicas)
+Pode apagar os arquivos -p207.js.
 
-Modo Infinito sem a Floresta de Eldervale (fica Bosque Sombrio e
-Floresta Morta entre os cenários abertos).
+Nova heroína Araí (Xamã), Profundezas Amazônicas com o chefe Anhangá e a
+nova escolha final "Enfrentar a Guardiã" com a Elyndra transformada.
