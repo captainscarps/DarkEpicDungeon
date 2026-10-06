@@ -1,12 +1,8 @@
-DEPTHGATE — PATCH p208 (sobre a p207)
+DEPTHGATE — PATCH p209 (sobre a p208)
 
-Envie/copie mantendo as pastas:
-  index.html, sw.js (cache ded-web-v1.44.0)
-  assets/index-D6qIWtA7-p208.js, assets/ControlsPanel-kYdEPlgz-p208.js
-  assets/pixel-art/characters/shaman-pack*  (Araí)
-  assets/pixel-art/bosses/boss-anhanga.png, boss-guardian-fallen.png
-  assets/pixel-art/newmaps/am-*.png e bqb-* (mapa das Profundezas Amazônicas)
-Pode apagar os arquivos -p207.js.
+Envie/copie: index.html, sw.js (cache ded-web-v1.44.1),
+assets/index-D6qIWtA7-p209.js e assets/ControlsPanel-kYdEPlgz-p209.js.
+Pode apagar os arquivos -p208.js.
 
-Nova heroína Araí (Xamã), Profundezas Amazônicas com o chefe Anhangá e a
-nova escolha final "Enfrentar a Guardiã" com a Elyndra transformada.
+Górgona da Floresta como chefe das Ilhas; correção do congelamento nas
+transições do Modo Infinito; Castelo do Infinito mais leve.
