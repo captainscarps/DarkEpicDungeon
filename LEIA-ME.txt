@@ -1,8 +1,8 @@
-DEPTHGATE — PATCH p205 (sobre a p202, p203 ou p204)
+DEPTHGATE — PATCH p207 (sobre a p206)
 
-Envie/copie: index.html, sw.js (cache ded-web-v1.42.2),
-assets/index-D6qIWtA7-p205.js e assets/ControlsPanel-kYdEPlgz-p205.js.
-Pode apagar os .js antigos.
+Envie/copie: index.html, sw.js (cache ded-web-v1.43.1),
+assets/index-D6qIWtA7-p207.js e assets/ControlsPanel-kYdEPlgz-p207.js.
+Pode apagar os arquivos -p206.js.
 
-Modo Infinito de volta aos 4 cenários de masmorra (padrão visual do jogo),
-com chefe a cada 3 profundidades e todos os chefes possíveis a partir da 12.
+Modo Infinito sem a Floresta de Eldervale (fica Bosque Sombrio e
+Floresta Morta entre os cenários abertos).
