@@ -12,6 +12,14 @@
     { urls: ['stun:stun.cloudflare.com:3478'] }
   ];
 
+  // Normalização de código de sala: aceita "6SKC", "dg-6skc", "DG-6SKC", etc.
+  function normalizeCode(raw) {
+    if (!raw) return "";
+    let clean = String(raw).toUpperCase().replace(/[^A-Z0-9]/g, "");
+    if (clean.startsWith("DG")) clean = clean.substring(2);
+    return clean ? "DG-" + clean : "";
+  }
+
   // Serializadores seguros contra protótipos de getters em WebKit e browsers modernos
   function serializeDesc(desc) {
     if (!desc) return null;
@@ -48,6 +56,7 @@
       this.pingInterval = null;
       this._remoteDescriptionSet = false;
       this._pendingCandidates = [];
+      this.customSignalBaseUrl = null;
 
       // Buffers de entrada e estado
       this.clientInputs = {
@@ -99,6 +108,7 @@
     }
 
     getSignalBaseUrl() {
+      if (this.customSignalBaseUrl) return this.customSignalBaseUrl;
       try {
         const loc = window.location;
         if (!loc || !loc.host || loc.protocol === "file:") {
@@ -108,6 +118,14 @@
       } catch (e) {
         return "http://localhost:5200/api/signal";
       }
+    }
+
+    async getServerInfo() {
+      try {
+        const res = await fetch(`${this.getSignalBaseUrl()}/info`);
+        if (res.ok) return await res.json();
+      } catch (e) {}
+      return null;
     }
 
     generateRoomCode() {
@@ -166,7 +184,7 @@
       this.status = "hosting";
       this._remoteDescriptionSet = false;
       this._pendingCandidates = [];
-      this.roomCode = (customCode || this.generateRoomCode()).toUpperCase();
+      this.roomCode = normalizeCode(customCode || this.generateRoomCode());
 
       this.pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
 
@@ -201,13 +219,19 @@
 
       // Registra oferta no sinalizador
       try {
-        await fetch(`${this.getSignalBaseUrl()}/create`, {
+        const createRes = await fetch(`${this.getSignalBaseUrl()}/create`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ code: this.roomCode, offer })
         });
+        if (!createRes.ok) {
+          throw new Error("Servidor de rede retornou status " + createRes.status);
+        }
       } catch (err) {
-        console.warn("[Net] Sinalizador local indisponível, modo direto/convite ativo.");
+        console.warn("[Net] Sinalizador local indisponível, verifique se server.cjs está rodando.");
+        if (window.location.hostname.includes("github.io")) {
+          throw new Error("No GitHub Pages, o modo online precisa de conexão com o IP do Host onde o jogo foi iniciado (INICIAR-JOGO.bat).");
+        }
       }
 
       this._startHostPolling();
@@ -246,7 +270,28 @@
       this.status = "joining";
       this._remoteDescriptionSet = false;
       this._pendingCandidates = [];
-      this.roomCode = String(roomCode || "").trim().toUpperCase();
+
+      let input = String(roomCode || "").trim();
+      let customSignal = null;
+      let targetCode = input;
+
+      // Suporte a IP/URL no prompt (ex: "10.8.12.77:5200/6SKC" ou "http://10.8.12.77:5200/DG-6SKC")
+      if (input.includes(":") || input.includes("/")) {
+        try {
+          let urlStr = input;
+          if (!urlStr.startsWith("http://") && !urlStr.startsWith("https://")) {
+            urlStr = "http://" + urlStr;
+          }
+          const parsed = new URL(urlStr);
+          customSignal = `${parsed.protocol}//${parsed.host}/api/signal`;
+          const pathCode = parsed.pathname.replace(/^\//, "").trim();
+          if (pathCode) targetCode = pathCode;
+        } catch (e) {}
+      }
+
+      this.customSignalBaseUrl = customSignal;
+      const clean = normalizeCode(targetCode);
+      this.roomCode = clean || targetCode.toUpperCase();
 
       this.pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
 
@@ -257,13 +302,13 @@
 
       this.pc.onicecandidate = async (e) => {
         if (e.candidate && this.status !== "disconnected") {
-          const clean = serializeCand(e.candidate);
-          if (clean) {
+          const cleanCand = serializeCand(e.candidate);
+          if (cleanCand) {
             try {
               await fetch(`${this.getSignalBaseUrl()}/candidate`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ code: this.roomCode, candidate: clean, from: "guest" })
+                body: JSON.stringify({ code: this.roomCode, candidate: cleanCand, from: "guest" })
               });
             } catch (err) {}
           }
@@ -275,10 +320,13 @@
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code: this.roomCode })
-      }).then(r => r.json());
+      }).then(r => r.json()).catch(() => ({
+        ok: false,
+        error: "Servidor de conexão inalcançável! Certifique-se de que o jogo foi iniciado pelo INICIAR-JOGO.bat no PC Host."
+      }));
 
       if (!joinRes.ok || !joinRes.offer) {
-        throw new Error(joinRes.error || "Sala não encontrada ou host indisponível");
+        throw new Error(joinRes.error || `Sala "${this.roomCode}" não encontrada! Verifique se o Host já clicou em CRIAR SALA.`);
       }
 
       await this._setRemoteDescSafe(joinRes.offer);
@@ -464,6 +512,7 @@
       this.latestWorldState = null;
       this._remoteDescriptionSet = false;
       this._pendingCandidates = [];
+      this.customSignalBaseUrl = null;
     }
   }
 

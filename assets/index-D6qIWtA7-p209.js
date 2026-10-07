@@ -371,11 +371,11 @@ $o.prototype.showOnlineCoopLobby = function() {
   const ctn = this.add.container(0, 0).setDepth(890);
   const overlay = this.add.rectangle(i, t, _ * 1.3, st * 1.3, 328450, 0.86).setInteractive();
   const g = this.add.graphics();
-  __softPanel(g, i - 180, 36, 360, 280);
+  __softPanel(g, i - 180, 32, 360, 288);
 
-  const title = this.add.text(i, 60, "CO-OP EM REDE (P2P)", { ...qe, fontSize: "20px", color: "#c9a24a" }).setOrigin(0.5);
-  const sub = this.add.text(i, 84, "Conecte dois navegadores na mesma rede ou pela Internet", { ...kt, fontSize: "9px", color: "#b8a888" }).setOrigin(0.5);
-  const statusText = this.add.text(i, 110, "", { fontFamily: "'Courier New', monospace", fontSize: "11px", color: "#ffd24a", align: "center", wordWrap: { width: 320 } }).setOrigin(0.5);
+  const title = this.add.text(i, 54, "CO-OP EM REDE (P2P)", { ...qe, fontSize: "19px", color: "#c9a24a" }).setOrigin(0.5);
+  const sub = this.add.text(i, 76, "Conecte dois aparelhos no mesmo Wi-Fi ou rede local", { ...kt, fontSize: "9px", color: "#b8a888" }).setOrigin(0.5);
+  const statusText = this.add.text(i, 98, "", { fontFamily: "'Courier New', monospace", fontSize: "11px", color: "#ffd24a", align: "center", wordWrap: { width: 330 } }).setOrigin(0.5);
 
   const contentBox = this.add.container(0, 0);
   ctn.add([overlay, g, title, sub, statusText, contentBox]);
@@ -383,13 +383,13 @@ $o.prototype.showOnlineCoopLobby = function() {
   const makeBtn = (y, label, cb, col = "#d8cdb4", bgCol = "#241a10") => {
     const txt = this.add.text(i, y, label, {
       fontFamily: "Georgia, 'Times New Roman', serif",
-      fontSize: "13px",
+      fontSize: "12px",
       fontStyle: "bold",
       color: col,
       backgroundColor: bgCol,
-      padding: { x: 18, y: 6 }
+      padding: { x: 16, y: 5 }
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-    const z = this.add.zone(i, y, 260, 26).setInteractive({ useHandCursor: true });
+    const z = this.add.zone(i, y, 260, 24).setInteractive({ useHandCursor: true });
     const onOver = () => txt.setColor("#ffd24a");
     const onOut = () => txt.setColor(col);
     const onDown = () => {
@@ -409,11 +409,11 @@ $o.prototype.showOnlineCoopLobby = function() {
   const showInitialView = () => {
     contentBox.removeAll(true);
     title.setText("CO-OP EM REDE (P2P)").setColor("#c9a24a");
-    sub.setText("Conecte dois navegadores na mesma rede ou pela Internet");
+    sub.setText("Conecte dois aparelhos no mesmo Wi-Fi ou rede local");
     statusText.setText("");
 
-    const b1 = makeBtn(130, "CRIAR SALA (HOST)", () => startHosting());
-    const b2 = makeBtn(170, "ENTRAR EM SALA (CLIENT)", () => startJoining());
+    const b1 = makeBtn(124, "CRIAR SALA (HOST)", () => startHosting());
+    const b2 = makeBtn(164, "ENTRAR EM SALA (CLIENT)", () => startJoining());
     const b3 = makeBtn(250, "VOLTAR", () => {
       this.closeSubPanel();
       this.showEndlessIntro();
@@ -426,26 +426,40 @@ $o.prototype.showOnlineCoopLobby = function() {
   const startHosting = async () => {
     contentBox.removeAll(true);
     title.setText("CRIANDO SALA...").setColor("#ffd24a");
-    sub.setText("Iniciando conexao WebRTC P2P");
+    sub.setText("Iniciando servidor de conexao P2P");
     statusText.setText("Aguarde um instante...");
 
     try {
       const code = await window.DepthGateNet.hostRoom();
+      const sInfo = await window.DepthGateNet.getServerInfo();
+
       title.setText("SALA: " + code).setColor("#ffd24a");
-      sub.setText("Envie este codigo para o segundo jogador:");
+      sub.setText("Envie o codigo para o segundo jogador:");
       statusText.setText("Aguardando o Jogador 2 conectar...");
 
-      const codeBox = this.add.text(i, 140, code, {
+      const codeBox = this.add.text(i, 126, code, {
         fontFamily: "'Courier New', monospace",
-        fontSize: "24px",
+        fontSize: "22px",
         fontStyle: "bold",
         color: "#ffffff",
         backgroundColor: "#1a1208",
-        padding: { x: 24, y: 8 }
+        padding: { x: 20, y: 5 }
       }).setOrigin(0.5);
       contentBox.add(codeBox);
 
-      const btnCopy = makeBtn(185, "COPIAR CODIGO", () => {
+      let infoY = 160;
+      if (sInfo && sInfo.lanUrl && sInfo.lanIp !== "localhost" && sInfo.lanIp !== "127.0.0.1") {
+        const lanHint = this.add.text(i, infoY, "No 2o PC ou celular na mesma rede abra:\n" + sInfo.lanUrl, {
+          fontFamily: "'Courier New', monospace",
+          fontSize: "9px",
+          color: "#8fc2f2",
+          align: "center"
+        }).setOrigin(0.5);
+        contentBox.add(lanHint);
+        infoY += 28;
+      }
+
+      const btnCopy = makeBtn(infoY, "COPIAR CODIGO", () => {
         try {
           if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(code);
@@ -487,7 +501,7 @@ $o.prototype.showOnlineCoopLobby = function() {
       this.subSel = 0;
 
     } catch (err) {
-      statusText.setText("Erro ao criar sala: " + (err.message || err)).setColor("#ff5a4a");
+      statusText.setText("Erro ao criar sala:\n" + (err.message || err)).setColor("#ff5a4a");
       const bRetry = makeBtn(210, "TENTAR NOVAMENTE", () => startHosting());
       const bBack = makeBtn(250, "VOLTAR", () => showInitialView());
       this.subButtons = [bRetry, bBack];
@@ -496,17 +510,17 @@ $o.prototype.showOnlineCoopLobby = function() {
   };
 
   const startJoining = async () => {
-    const raw = window.prompt("Digite o codigo da sala gerado pelo Host (ex: DG-A4B7):", "DG-");
+    const raw = window.prompt("Digite o codigo da sala (ex: 6SKC ou DG-6SKC)\nou IP do Host (ex: 10.8.12.77:5200/6SKC):", "");
     if (!raw) return;
-    const code = raw.trim().toUpperCase();
+    const input = raw.trim();
 
     contentBox.removeAll(true);
     title.setText("CONECTANDO A SALA").setColor("#7fc8ff");
-    sub.setText("Codigo informado: " + code);
-    statusText.setText("Buscando Host...");
+    sub.setText("Buscando: " + input);
+    statusText.setText("Conectando ao Host...");
 
     try {
-      await window.DepthGateNet.joinRoom(code);
+      await window.DepthGateNet.joinRoom(input);
       statusText.setText("Conexao P2P estabelecida!\nAguardando Host iniciar a partida...");
 
       const onInitRun = (data) => {
@@ -560,8 +574,8 @@ $o.prototype.showOnlineCoopLobby = function() {
       this.subSel = 0;
 
     } catch (err) {
-      statusText.setText("Falha na conexao: " + (err.message || err)).setColor("#ff5a4a");
-      const bRetry = makeBtn(210, "TENTAR OUTRO CODIGO", () => startJoining());
+      statusText.setText("Nao foi possivel conectar:\n" + (err.message || err)).setColor("#ff5a4a");
+      const bRetry = makeBtn(210, "TENTAR NOVAMENTE", () => startJoining());
       const bBack = makeBtn(250, "VOLTAR", () => showInitialView());
       this.subButtons = [bRetry, bBack];
       this.subSel = 0;
