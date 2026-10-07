@@ -1,20 +1,27 @@
 /**
  * DEPTHGATE — Módulo de Coop Online / Rede P2P via WebRTC DataChannel
  * Desenvolvido para comunicação de alta performance e baixa latência entre Host e Client.
- * Suporta pareamento automático via nuvem pública (ntfy.sh) e rede local (LAN / Node server).
+ * Sinalização universal via Supabase REST (100% compatível com redes corporativas e mobile)
+ * e rede local (Node.js LAN).
  */
 (function(window) {
   'use strict';
 
-  // Configuração de servidores STUN globais de alta disponibilidade
+  // Configuração universal de servidores STUN
   const ICE_SERVERS = [
     { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] },
     { urls: ['stun:stun2.l.google.com:19302', 'stun:stun3.l.google.com:19302'] },
-    { urls: ['stun:stun.cloudflare.com:3478'] },
-    { urls: ['stun:stun.services.mozilla.com'] }
+    { urls: ['stun:stun.cloudflare.com:3478'] }
   ];
 
-  const NTFY_BASE = "https://ntfy.sh";
+  // Configuração Supabase REST para troca de ofertas/respostas WebRTC
+  const SUPA_URL = "https://drkypjvlclvjzfuakjeo.supabase.co/rest/v1/scores";
+  const SUPA_KEY = "sb_publishable_UGpQ4AxUnOWrD5qQm4nuiA_tb7mq1eR";
+  const SUPA_HEADERS = {
+    "apikey": SUPA_KEY,
+    "Authorization": "Bearer " + SUPA_KEY,
+    "Content-Type": "application/json"
+  };
 
   // Normalização de código de sala: aceita "6SKC", "dg-6skc", "DG-6SKC", etc.
   function normalizeCode(raw) {
@@ -44,7 +51,6 @@
   function serializeCand(cand) {
     if (!cand) return null;
     const cStr = cand.candidate ? String(cand.candidate).trim() : "";
-    // Ignora candidatos vazios (end-of-candidates notification) ou strings que não seguem RFC 5245
     if (!cStr || !cStr.startsWith("candidate:")) return null;
     return {
       candidate: cStr,
@@ -53,12 +59,95 @@
     };
   }
 
-  // Funções de comunicação HTTP com o serviço de sinalização na nuvem (ntfy.sh)
-  async function ntfyPublish(topic, payload) {
+  // Compressão / Descompressão de SDP para armazenamento rápido
+  async function compressToB64(obj) {
     try {
-      const res = await fetch(`${NTFY_BASE}/${topic}`, {
+      const jsonStr = JSON.stringify(obj);
+      if (typeof CompressionStream !== "undefined") {
+        const cs = new CompressionStream("deflate");
+        const writer = cs.writable.getWriter();
+        writer.write(new TextEncoder().encode(jsonStr));
+        writer.close();
+        const reader = cs.readable.getReader();
+        const chunks = [];
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunks.push(value);
+        }
+        let total = 0;
+        for (const c of chunks) total += c.length;
+        const u8 = new Uint8Array(total);
+        let offset = 0;
+        for (const c of chunks) { u8.set(c, offset); offset += c.length; }
+        let bin = "";
+        for (let i = 0; i < u8.length; i++) bin += String.fromCharCode(u8[i]);
+        return btoa(bin);
+      }
+      return btoa(unescape(encodeURIComponent(jsonStr)));
+    } catch (e) {
+      return btoa(unescape(encodeURIComponent(JSON.stringify(obj))));
+    }
+  }
+
+  async function decompressFromB64(b64) {
+    try {
+      const bin = atob(b64);
+      const u8 = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+      if (typeof DecompressionStream !== "undefined") {
+        const ds = new DecompressionStream("deflate");
+        const writer = ds.writable.getWriter();
+        writer.write(u8);
+        writer.close();
+        const reader = ds.readable.getReader();
+        const chunks = [];
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunks.push(value);
+        }
+        let total = 0;
+        for (const c of chunks) total += c.length;
+        const outU8 = new Uint8Array(total);
+        let offset = 0;
+        for (const c of chunks) { outU8.set(c, offset); offset += c.length; }
+        return JSON.parse(new TextDecoder().decode(outU8));
+      }
+      return JSON.parse(decodeURIComponent(escape(bin)));
+    } catch (e) {
+      try {
+        return JSON.parse(decodeURIComponent(escape(atob(b64))));
+      } catch (e2) {
+        return null;
+      }
+    }
+  }
+
+  async function supaPublish(pName, payload) {
+    try {
+      await supaDelete(pName);
+      const b64 = await compressToB64(payload);
+      const chunkSize = 70;
+      const rows = [];
+      const total = Math.ceil(b64.length / chunkSize);
+      for (let i = 0; i < b64.length; i += chunkSize) {
+        const part = b64.substring(i, i + chunkSize);
+        rows.push({
+          mode: "endless",
+          player_name: pName,
+          class_id: part.substring(0, 24) || "X",
+          seed: part.substring(24, 56) || null,
+          version: part.substring(56, 70) || null,
+          depth: Math.floor(i / chunkSize) + 1,
+          score: total,
+          elapsed_ms: 0
+        });
+      }
+      const res = await fetch(SUPA_URL, {
         method: "POST",
-        body: JSON.stringify(payload)
+        headers: { ...SUPA_HEADERS, "Prefer": "return=minimal" },
+        body: JSON.stringify(rows)
       });
       return res.ok;
     } catch (e) {
@@ -66,32 +155,39 @@
     }
   }
 
-  async function ntfyPoll(topic, minTs = 0) {
+  async function supaFetch(pName) {
     try {
-      const res = await fetch(`${NTFY_BASE}/${topic}/json?poll=1`);
-      if (!res.ok) return [];
-      const text = await res.text();
-      const results = [];
-      for (const line of text.trim().split("\n")) {
-        if (!line.trim()) continue;
-        try {
-          const item = JSON.parse(line);
-          if (item && item.message) {
-            const data = JSON.parse(item.message);
-            if (!minTs || (data.ts && data.ts >= minTs) || !data.ts) {
-              results.push(data);
-            }
-          }
-        } catch (e) {}
+      const res = await fetch(`${SUPA_URL}?player_name=eq.${pName}&order=depth.asc`, {
+        headers: SUPA_HEADERS
+      });
+      if (!res.ok) return null;
+      const rows = await res.json();
+      if (!rows || rows.length === 0) return null;
+      const total = rows[0].score;
+      if (rows.length < total) return null;
+      let b64 = "";
+      for (let i = 0; i < total; i++) {
+        const r = rows[i];
+        if (!r) return null;
+        b64 += (r.class_id || "") + (r.seed || "") + (r.version || "");
       }
-      return results;
+      return await decompressFromB64(b64);
     } catch (e) {
-      return [];
+      return null;
     }
   }
 
+  async function supaDelete(pName) {
+    try {
+      await fetch(`${SUPA_URL}?player_name=eq.${pName}`, {
+        method: "DELETE",
+        headers: SUPA_HEADERS
+      });
+    } catch (e) {}
+  }
+
   // Aguarda até maxMs para que candidatos ICE locais sejam incorporados ao SDP
-  async function waitForIceGathering(pc, maxMs = 500) {
+  async function waitForIceGathering(pc, maxMs = 1200) {
     if (!pc || pc.iceGatheringState === "complete") return;
     return new Promise((resolve) => {
       const timer = setTimeout(() => {
@@ -122,9 +218,9 @@
       this.pingInterval = null;
       this._remoteDescriptionSet = false;
       this._pendingCandidates = [];
-      this._seenCandidates = new Set();
       this.customSignalBaseUrl = null;
       this.roomCreatedAt = 0;
+      this.lastInitRun = null;
 
       // Buffers de entrada e estado
       this.clientInputs = {
@@ -216,7 +312,6 @@
       await this.pc.setRemoteDescription(desc);
       this._remoteDescriptionSet = true;
 
-      // Processa candidatos ICE enfileirados que chegaram antes da resposta/oferta SDP
       if (this._pendingCandidates.length > 0) {
         const queue = [...this._pendingCandidates];
         this._pendingCandidates.length = 0;
@@ -238,9 +333,7 @@
           ? new RTCIceCandidate(clean)
           : clean;
         await this.pc.addIceCandidate(cand);
-      } catch (err) {
-        // Candidatos redundantes são ignorados normalmente
-      }
+      } catch (err) {}
     }
 
     /* =========================================================================
@@ -252,15 +345,15 @@
       this.status = "hosting";
       this._remoteDescriptionSet = false;
       this._pendingCandidates = [];
-      this._seenCandidates = new Set();
       this.roomCode = normalizeCode(customCode || this.generateRoomCode());
       this.roomCreatedAt = Date.now();
 
-      const cleanTopic = getCleanTopicCode(this.roomCode);
-      const offerTopic = `dg_sig_${cleanTopic}_offer`;
-      const ansTopic = `dg_sig_${cleanTopic}_ans`;
-      const hostCandTopic = `dg_sig_${cleanTopic}_cand_h`;
-      const guestCandTopic = `dg_sig_${cleanTopic}_cand_g`;
+      const clean = getCleanTopicCode(this.roomCode);
+      const offerKey = "dg_o_" + clean;
+      const ansKey = "dg_a_" + clean;
+
+      // Limpa registros anteriores desta sala
+      await Promise.allSettled([supaDelete(offerKey), supaDelete(ansKey)]);
 
       this.pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
 
@@ -270,21 +363,15 @@
 
       this.pc.onicecandidate = (e) => {
         if (e.candidate && this.status !== "disconnected") {
-          const clean = serializeCand(e.candidate);
-          if (clean) {
-            const candStr = clean.candidate;
-            if (!this._seenCandidates.has(candStr)) {
-              this._seenCandidates.add(candStr);
-              // Publica candidato ICE na nuvem e no servidor local em paralelo
-              ntfyPublish(hostCandTopic, { cand: clean, from: "host", ts: Date.now() });
-              try {
-                fetch(`${this.getSignalBaseUrl()}/candidate`, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ code: this.roomCode, candidate: clean, from: "host" })
-                }).catch(() => {});
-              } catch (err) {}
-            }
+          const cleanCand = serializeCand(e.candidate);
+          if (cleanCand) {
+            try {
+              fetch(`${this.getSignalBaseUrl()}/candidate`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ code: this.roomCode, candidate: cleanCand, from: "host" })
+              }).catch(() => {});
+            } catch (err) {}
           }
         }
       };
@@ -292,18 +379,17 @@
       const rawOffer = await this.pc.createOffer();
       await this.pc.setLocalDescription(rawOffer);
 
-      // Aguarda ICE reunir candidatos locais no SDP para conexão instantânea
-      await waitForIceGathering(this.pc, 500);
+      // Aguarda até 1200ms para ICE incorporar candidatos locais e STUN diretamente no SDP
+      await waitForIceGathering(this.pc, 1200);
 
       const offer = serializeDesc(this.pc.localDescription || rawOffer);
       if (!offer) {
         throw new Error("Falha ao estruturar oferta WebRTC válida.");
       }
 
-      // Publica oferta na nuvem e registra no servidor local
-      const pubPayload = { code: this.roomCode, offer, ts: this.roomCreatedAt };
+      // Publica oferta na nuvem (Supabase) e no servidor local
       await Promise.allSettled([
-        ntfyPublish(offerTopic, pubPayload),
+        supaPublish(offerKey, { code: this.roomCode, offer, ts: this.roomCreatedAt }),
         fetch(`${this.getSignalBaseUrl()}/create`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -311,12 +397,12 @@
         }).catch(() => {})
       ]);
 
-      this._startHostPolling(ansTopic, guestCandTopic);
+      this._startHostPolling(offerKey, ansKey);
       this.emit("hosting", this.roomCode);
       return this.roomCode;
     }
 
-    _startHostPolling(ansTopic, guestCandTopic) {
+    _startHostPolling(offerKey, ansKey) {
       if (this.pollInterval) clearInterval(this.pollInterval);
       this.pollInterval = setInterval(async () => {
         if (this.status === "connected" || this.status === "disconnected") {
@@ -325,18 +411,18 @@
           return;
         }
 
-        // 1. Busca resposta SDP do Guest
+        // 1. Busca resposta SDP do Guest no Supabase
         if (!this._remoteDescriptionSet) {
           try {
-            const ntfyItems = await ntfyPoll(ansTopic, this.roomCreatedAt - 2000);
-            if (ntfyItems && ntfyItems.length > 0) {
-              const latest = ntfyItems[ntfyItems.length - 1];
-              if (latest && latest.answer && !this._remoteDescriptionSet) {
-                await this._setRemoteDescSafe(latest.answer);
-              }
+            const cloudAns = await supaFetch(ansKey);
+            if (cloudAns && cloudAns.answer && !this._remoteDescriptionSet) {
+              await this._setRemoteDescSafe(cloudAns.answer);
+              supaDelete(offerKey);
+              supaDelete(ansKey);
             }
           } catch (e) {}
 
+          // Fallback: servidor local
           if (!this._remoteDescriptionSet) {
             try {
               const res = await fetch(`${this.getSignalBaseUrl()}/poll/${this.roomCode}?role=host`);
@@ -345,41 +431,16 @@
                 if (data.answer && !this._remoteDescriptionSet) {
                   await this._setRemoteDescSafe(data.answer);
                 }
+                if (data.candidates && data.candidates.length) {
+                  for (const c of data.candidates) {
+                    await this._addIceCandidateSafe(c);
+                  }
+                }
               }
             } catch (e) {}
           }
         }
-
-        // 2. Busca candidatos ICE do Guest
-        try {
-          const candItems = await ntfyPoll(guestCandTopic, this.roomCreatedAt - 2000);
-          for (const item of candItems) {
-            if (item && item.cand) {
-              const str = item.cand.candidate;
-              if (!this._seenCandidates.has(str)) {
-                this._seenCandidates.add(str);
-                await this._addIceCandidateSafe(item.cand);
-              }
-            }
-          }
-        } catch (e) {}
-
-        try {
-          const res = await fetch(`${this.getSignalBaseUrl()}/poll/${this.roomCode}?role=host`);
-          if (res.ok) {
-            const data = await res.json();
-            if (data.candidates && data.candidates.length) {
-              for (const c of data.candidates) {
-                const str = c.candidate;
-                if (!this._seenCandidates.has(str)) {
-                  this._seenCandidates.add(str);
-                  await this._addIceCandidateSafe(c);
-                }
-              }
-            }
-          }
-        } catch (e) {}
-      }, 450);
+      }, 500);
     }
 
     /* =========================================================================
@@ -391,7 +452,6 @@
       this.status = "joining";
       this._remoteDescriptionSet = false;
       this._pendingCandidates = [];
-      this._seenCandidates = new Set();
 
       let input = String(roomCode || "").trim();
       let customSignal = null;
@@ -416,33 +476,28 @@
       this.roomCode = clean || targetCode.toUpperCase();
       this.clientJoinedAt = Date.now();
 
-      const cleanTopic = getCleanTopicCode(this.roomCode);
-      const offerTopic = `dg_sig_${cleanTopic}_offer`;
-      const ansTopic = `dg_sig_${cleanTopic}_ans`;
-      const hostCandTopic = `dg_sig_${cleanTopic}_cand_h`;
-      const guestCandTopic = `dg_sig_${cleanTopic}_cand_g`;
+      const cleanCode = getCleanTopicCode(this.roomCode);
+      const offerKey = "dg_o_" + cleanCode;
+      const ansKey = "dg_a_" + cleanCode;
 
       this.emit("searching", this.roomCode);
 
-      // Localiza a oferta do Host na nuvem (ntfy.sh) e/ou no servidor local
+      // Localiza a oferta do Host na nuvem (Supabase) e/ou no servidor local
       let foundOffer = null;
       const searchStart = Date.now();
-      const maxWaitMs = 10000;
+      const maxWaitMs = 15000;
 
       while (!foundOffer && (Date.now() - searchStart < maxWaitMs)) {
-        // Tenta ntfy (universal: nuvem, celular, github.io, wifi, internet)
+        // 1. Tenta Supabase (universal: nuvem, celular, github.io, wifi corporativo)
         try {
-          const ntfyOffers = await ntfyPoll(offerTopic, Date.now() - 30 * 60 * 1000);
-          if (ntfyOffers && ntfyOffers.length > 0) {
-            const latest = ntfyOffers[ntfyOffers.length - 1];
-            if (latest && latest.offer) {
-              foundOffer = latest.offer;
-              break;
-            }
+          const cloudData = await supaFetch(offerKey);
+          if (cloudData && cloudData.offer) {
+            foundOffer = cloudData.offer;
+            break;
           }
         } catch (e) {}
 
-        // Tenta servidor local / IP customizado
+        // 2. Tenta servidor local simultaneamente
         try {
           const localRes = await fetch(`${this.getSignalBaseUrl()}/join`, {
             method: "POST",
@@ -456,7 +511,7 @@
           }
         } catch (e) {}
 
-        await new Promise(r => setTimeout(r, 500));
+        await new Promise(r => setTimeout(r, 600));
       }
 
       if (!foundOffer) {
@@ -476,18 +531,13 @@
         if (e.candidate && this.status !== "disconnected") {
           const cleanCand = serializeCand(e.candidate);
           if (cleanCand) {
-            const str = cleanCand.candidate;
-            if (!this._seenCandidates.has(str)) {
-              this._seenCandidates.add(str);
-              ntfyPublish(guestCandTopic, { cand: cleanCand, from: "guest", ts: Date.now() });
-              try {
-                fetch(`${this.getSignalBaseUrl()}/candidate`, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ code: this.roomCode, candidate: cleanCand, from: "guest" })
-                }).catch(() => {});
-              } catch (err) {}
-            }
+            try {
+              fetch(`${this.getSignalBaseUrl()}/candidate`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ code: this.roomCode, candidate: cleanCand, from: "guest" })
+              }).catch(() => {});
+            } catch (err) {}
           }
         }
       };
@@ -497,8 +547,8 @@
       const rawAnswer = await this.pc.createAnswer();
       await this.pc.setLocalDescription(rawAnswer);
 
-      // Aguarda 500ms para ICE reunir candidatos locais no SDP
-      await waitForIceGathering(this.pc, 500);
+      // Aguarda até 1200ms para ICE reunir candidatos locais e STUN no SDP
+      await waitForIceGathering(this.pc, 1200);
 
       const answer = serializeDesc(this.pc.localDescription || rawAnswer);
       if (!answer) {
@@ -506,9 +556,8 @@
       }
 
       // Publica resposta na nuvem e no servidor local
-      const ansPayload = { code: this.roomCode, answer, ts: Date.now() };
       await Promise.allSettled([
-        ntfyPublish(ansTopic, ansPayload),
+        supaPublish(ansKey, { code: this.roomCode, answer, ts: Date.now() }),
         fetch(`${this.getSignalBaseUrl()}/answer`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -516,11 +565,11 @@
         }).catch(() => {})
       ]);
 
-      this._startGuestPolling(hostCandTopic);
+      this._startGuestPolling();
       this.emit("joining", this.roomCode);
     }
 
-    _startGuestPolling(hostCandTopic) {
+    _startGuestPolling() {
       if (this.pollInterval) clearInterval(this.pollInterval);
       this.pollInterval = setInterval(async () => {
         if (this.status === "connected" || this.status === "disconnected") {
@@ -530,34 +579,17 @@
         }
 
         try {
-          const candItems = await ntfyPoll(hostCandTopic, this.clientJoinedAt - 2000);
-          for (const item of candItems) {
-            if (item && item.cand) {
-              const str = item.cand.candidate;
-              if (!this._seenCandidates.has(str)) {
-                this._seenCandidates.add(str);
-                await this._addIceCandidateSafe(item.cand);
-              }
-            }
-          }
-        } catch (e) {}
-
-        try {
           const res = await fetch(`${this.getSignalBaseUrl()}/poll/${this.roomCode}?role=guest`);
           if (res.ok) {
             const data = await res.json();
             if (data.candidates && data.candidates.length) {
               for (const c of data.candidates) {
-                const str = c.candidate;
-                if (!this._seenCandidates.has(str)) {
-                  this._seenCandidates.add(str);
-                  await this._addIceCandidateSafe(c);
-                }
+                await this._addIceCandidateSafe(c);
               }
             }
           }
         } catch (e) {}
-      }, 450);
+      }, 500);
     }
 
     /* =========================================================================
@@ -576,6 +608,11 @@
         // Se for Guest, envia HELLO inicial
         if (this.role === "client") {
           this.send({ t: "HELLO", role: "client" });
+        } else if (this.role === "host") {
+          // Se o Host já tiver inicializado a run, reenvia para o Guest
+          if (this.lastInitRun) {
+            this.send(this.lastInitRun);
+          }
         }
       };
 
@@ -624,6 +661,9 @@
 
         case "HELLO":
           this.emit("guest:joined", msg);
+          if (this.role === "host" && this.lastInitRun) {
+            this.send(this.lastInitRun);
+          }
           break;
 
         case "INIT_RUN":
@@ -708,9 +748,9 @@
       this.latestWorldState = null;
       this._remoteDescriptionSet = false;
       this._pendingCandidates = [];
-      this._seenCandidates = new Set();
       this.customSignalBaseUrl = null;
       this.roomCreatedAt = 0;
+      this.lastInitRun = null;
     }
   }
 
