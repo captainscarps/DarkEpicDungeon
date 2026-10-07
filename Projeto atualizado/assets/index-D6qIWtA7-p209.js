@@ -434,7 +434,7 @@ $o.prototype.showOnlineCoopLobby = function() {
       const sInfo = await window.DepthGateNet.getServerInfo();
 
       title.setText("SALA: " + code).setColor("#ffd24a");
-      sub.setText("Envie o codigo para o segundo jogador:");
+      sub.setText("O Jogador 2 so precisa entrar e digitar este codigo:");
       statusText.setText("Aguardando o Jogador 2 conectar...");
 
       const codeBox = this.add.text(i, 126, code, {
@@ -448,16 +448,14 @@ $o.prototype.showOnlineCoopLobby = function() {
       contentBox.add(codeBox);
 
       let infoY = 160;
-      if (sInfo && sInfo.lanUrl && sInfo.lanIp !== "localhost" && sInfo.lanIp !== "127.0.0.1") {
-        const lanHint = this.add.text(i, infoY, "No 2o PC ou celular na mesma rede abra:\n" + sInfo.lanUrl, {
-          fontFamily: "'Courier New', monospace",
-          fontSize: "9px",
-          color: "#8fc2f2",
-          align: "center"
-        }).setOrigin(0.5);
-        contentBox.add(lanHint);
-        infoY += 28;
-      }
+      const lanHint = this.add.text(i, infoY, "Conexao automatica em qualquer navegador, PC ou celular!", {
+        fontFamily: "'Courier New', monospace",
+        fontSize: "9px",
+        color: "#8fc2f2",
+        align: "center"
+      }).setOrigin(0.5);
+      contentBox.add(lanHint);
+      infoY += 28;
 
       const btnCopy = makeBtn(infoY, "COPIAR CODIGO", () => {
         try {
@@ -510,14 +508,19 @@ $o.prototype.showOnlineCoopLobby = function() {
   };
 
   const startJoining = async () => {
-    const raw = window.prompt("Digite o codigo da sala (ex: 6SKC ou DG-6SKC)\nou IP do Host (ex: 10.8.12.77:5200/6SKC):", "");
+    const raw = window.prompt("Digite o codigo da sala (ex: 2CBS ou DG-2CBS):", "");
     if (!raw) return;
     const input = raw.trim();
 
     contentBox.removeAll(true);
     title.setText("CONECTANDO A SALA").setColor("#7fc8ff");
     sub.setText("Buscando: " + input);
-    statusText.setText("Conectando ao Host...");
+    statusText.setText("Localizando Host...");
+
+    const onSearch = (c) => statusText.setText("Buscando sala " + c + "...");
+    const onOfferFound = () => statusText.setText("Host encontrado!\nNegociando conexao P2P...");
+    window.DepthGateNet.on("searching", onSearch);
+    window.DepthGateNet.on("offer:found", onOfferFound);
 
     try {
       await window.DepthGateNet.joinRoom(input);
@@ -565,6 +568,8 @@ $o.prototype.showOnlineCoopLobby = function() {
       window.DepthGateNet.on("net:init-run", onInitRun);
 
       const btnCancel = makeBtn(250, "CANCELAR CONEXAO", () => {
+        window.DepthGateNet.off("searching", onSearch);
+        window.DepthGateNet.off("offer:found", onOfferFound);
         window.DepthGateNet.off("net:init-run", onInitRun);
         window.DepthGateNet.disconnect();
         showInitialView();
@@ -574,6 +579,8 @@ $o.prototype.showOnlineCoopLobby = function() {
       this.subSel = 0;
 
     } catch (err) {
+      window.DepthGateNet.off("searching", onSearch);
+      window.DepthGateNet.off("offer:found", onOfferFound);
       statusText.setText("Nao foi possivel conectar:\n" + (err.message || err)).setColor("#ff5a4a");
       const bRetry = makeBtn(210, "TENTAR NOVAMENTE", () => startJoining());
       const bBack = makeBtn(250, "VOLTAR", () => showInitialView());
