@@ -98,14 +98,44 @@
       transform: scale(1.08);
       box-shadow: 0 0 14px rgba(201, 162, 74, 0.5);
     }
-    #fs-btn:active {
+    #fs-btn:active, #bm-btn:active {
       transform: scale(0.94);
+    }
+    #bm-btn {
+      position: fixed;
+      top: 14px;
+      right: 60px;
+      z-index: 90;
+      background: rgba(18, 12, 6, 0.72);
+      color: #ffd24a;
+      border: 1px solid rgba(201, 162, 74, 0.5);
+      border-radius: 8px;
+      height: 38px;
+      padding: 0 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      font-weight: bold;
+      text-decoration: none;
+      backdrop-filter: blur(4px);
+      transition: background 0.2s, transform 0.15s, border-color 0.2s, box-shadow 0.2s;
+    }
+    #bm-btn:hover {
+      background: rgba(45, 30, 15, 0.95);
+      border-color: #ffd24a;
+      transform: scale(1.05);
+      box-shadow: 0 0 14px rgba(201, 162, 74, 0.5);
     }
   </style>
   <script type="module" crossorigin src="./assets/index-D6qIWtA7-p209.js"></script>
 </head>
 <body>
   <div id="game"></div>
+  <a id="bm-btn" href="benchmark-2.5d.html" title="Abrir 2.5D Volumetric Benchmark">★ 2.5D BENCHMARK</a>
   <button id="fs-btn" title="Tela Cheia (Clique para Tela Cheia sem F11)" aria-label="Tela Cheia">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
       <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
