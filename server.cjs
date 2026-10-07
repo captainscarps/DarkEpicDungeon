@@ -145,11 +145,16 @@ const server = http.createServer((req, res) => {
       // fallback de navegação (SPA/PWA)
       return readFile(join(ROOT, "index.html"), (err2, index) => {
         if (err2) { res.writeHead(404); return res.end("404"); }
-        res.writeHead(200, { "Content-Type": MIME[".html"] });
+        res.writeHead(200, { "Content-Type": MIME[".html"], "Cache-Control": "no-cache, no-store, must-revalidate" });
         res.end(index);
       });
     }
-    res.writeHead(200, { "Content-Type": MIME[extname(file).toLowerCase()] || "application/octet-stream" });
+    const ext = extname(file).toLowerCase();
+    const headers = { "Content-Type": MIME[ext] || "application/octet-stream" };
+    if (ext === ".html" || ext === ".js" || ext === ".mjs" || ext === ".json") {
+      headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+    }
+    res.writeHead(200, headers);
     res.end(data);
   });
 });
