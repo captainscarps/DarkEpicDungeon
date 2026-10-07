@@ -31,8 +31,112 @@ const MIME = {
   ".ttf": "font/ttf",
 };
 
+// WebRTC P2P Signaling Store (em memória, sem dependências externas)
+const signalRooms = new Map();
+setInterval(() => {
+  const now = Date.now();
+  for (const [code, r] of signalRooms.entries()) {
+    if (now - r.updatedAt > 15 * 60 * 1000) signalRooms.delete(code);
+  }
+}, 60 * 1000);
+
+function handleP2PSignal(req, res, pathname, url) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  if (req.method === "OPTIONS") { res.writeHead(200); return res.end(); }
+
+  if (pathname === "/api/signal/create" && req.method === "POST") {
+    let body = ""; req.on("data", c => body += c);
+    req.on("end", () => {
+      try {
+        const d = JSON.parse(body || "{}");
+        const code = (d.code || Math.random().toString(36).substring(2, 6)).toUpperCase();
+        signalRooms.set(code, {
+          code, hostOffer: d.offer || null, guestAnswer: null,
+          hostCandidates: [], guestCandidates: [], updatedAt: Date.now()
+        });
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: true, code }));
+      } catch (e) { res.writeHead(400); res.end(JSON.stringify({ error: e.message })); }
+    });
+    return true;
+  }
+  if (pathname === "/api/signal/join" && req.method === "POST") {
+    let body = ""; req.on("data", c => body += c);
+    req.on("end", () => {
+      try {
+        const d = JSON.parse(body || "{}");
+        const code = String(d.code || "").toUpperCase();
+        const r = signalRooms.get(code);
+        if (!r) { res.writeHead(404, { "Content-Type": "application/json" }); return res.end(JSON.stringify({ error: "Sala não encontrada" })); }
+        r.updatedAt = Date.now();
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: true, offer: r.hostOffer }));
+      } catch (e) { res.writeHead(400); res.end(JSON.stringify({ error: e.message })); }
+    });
+    return true;
+  }
+  if (pathname === "/api/signal/answer" && req.method === "POST") {
+    let body = ""; req.on("data", c => body += c);
+    req.on("end", () => {
+      try {
+        const d = JSON.parse(body || "{}");
+        const code = String(d.code || "").toUpperCase();
+        const r = signalRooms.get(code);
+        if (!r) { res.writeHead(404, { "Content-Type": "application/json" }); return res.end(JSON.stringify({ error: "Sala não encontrada" })); }
+        r.guestAnswer = d.answer; r.updatedAt = Date.now();
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: true }));
+      } catch (e) { res.writeHead(400); res.end(JSON.stringify({ error: e.message })); }
+    });
+    return true;
+  }
+  if (pathname === "/api/signal/candidate" && req.method === "POST") {
+    let body = ""; req.on("data", c => body += c);
+    req.on("end", () => {
+      try {
+        const d = JSON.parse(body || "{}");
+        const code = String(d.code || "").toUpperCase();
+        const r = signalRooms.get(code);
+        if (!r) { res.writeHead(404, { "Content-Type": "application/json" }); return res.end(JSON.stringify({ error: "Sala não encontrada" })); }
+        if (d.from === "host") r.hostCandidates.push(d.candidate);
+        else r.guestCandidates.push(d.candidate);
+        r.updatedAt = Date.now();
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: true }));
+      } catch (e) { res.writeHead(400); res.end(JSON.stringify({ error: e.message })); }
+    });
+    return true;
+  }
+  if (pathname.startsWith("/api/signal/poll/") && req.method === "GET") {
+    const code = pathname.replace("/api/signal/poll/", "").trim().toUpperCase();
+    const role = url.searchParams.get("role");
+    const r = signalRooms.get(code);
+    if (!r) { res.writeHead(404, { "Content-Type": "application/json" }); return res.end(JSON.stringify({ error: "Sala não encontrada" })); }
+    r.updatedAt = Date.now();
+    res.writeHead(200, { "Content-Type": "application/json" });
+    if (role === "host") {
+      const candidates = [...r.guestCandidates];
+      r.guestCandidates.length = 0;
+      res.end(JSON.stringify({ answer: r.guestAnswer, candidates }));
+    } else {
+      const candidates = [...r.hostCandidates];
+      r.hostCandidates.length = 0;
+      res.end(JSON.stringify({ candidates }));
+    }
+    return true;
+  }
+  return false;
+}
+
 const server = http.createServer((req, res) => {
-  let path = decodeURIComponent(new URL(req.url, `http://localhost:${PORT}`).pathname);
+  const reqUrl = new URL(req.url, `http://localhost:${PORT}`);
+  const pathname = decodeURIComponent(reqUrl.pathname);
+  if (pathname.startsWith("/api/signal/")) {
+    if (handleP2PSignal(req, res, pathname, reqUrl)) return;
+  }
+  let path = pathname;
   if (path.endsWith("/")) path += "index.html";
   const file = normalize(join(ROOT, path));
   if (!file.startsWith(ROOT)) { res.writeHead(403); return res.end(); }
