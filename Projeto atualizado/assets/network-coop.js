@@ -5,11 +5,35 @@
 (function(window) {
   'use strict';
 
+  // Configuração universal de STUN com suporte a WebKit/Safari/Chrome/Firefox
   const ICE_SERVERS = [
-    { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' },
-    { urls: 'stun:global.stun.twilio.com:3478' }
+    { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] },
+    { urls: ['stun:stun2.l.google.com:19302', 'stun:stun3.l.google.com:19302'] },
+    { urls: ['stun:stun.cloudflare.com:3478'] }
   ];
+
+  // Serializadores seguros contra protótipos de getters em WebKit e browsers modernos
+  function serializeDesc(desc) {
+    if (!desc) return null;
+    const type = desc.type ? String(desc.type).toLowerCase() : "";
+    const sdp = desc.sdp ? String(desc.sdp) : "";
+    if (!type || !sdp || !["offer", "answer", "pranswer", "rollback"].includes(type)) {
+      return null;
+    }
+    return { type, sdp };
+  }
+
+  function serializeCand(cand) {
+    if (!cand) return null;
+    const cStr = cand.candidate ? String(cand.candidate).trim() : "";
+    // Ignora candidatos vazios (end-of-candidates notification) ou strings que não seguem RFC 5245
+    if (!cStr || !cStr.startsWith("candidate:")) return null;
+    return {
+      candidate: cStr,
+      sdpMid: cand.sdpMid != null ? String(cand.sdpMid) : undefined,
+      sdpMLineIndex: cand.sdpMLineIndex != null ? Number(cand.sdpMLineIndex) : undefined
+    };
+  }
 
   class DepthGateNetManager {
     constructor() {
@@ -22,6 +46,8 @@
       this.lastPingTs = 0;
       this.pollInterval = null;
       this.pingInterval = null;
+      this._remoteDescriptionSet = false;
+      this._pendingCandidates = [];
 
       // Buffers de entrada e estado
       this.clientInputs = {
@@ -73,9 +99,15 @@
     }
 
     getSignalBaseUrl() {
-      // Usa a mesma origem do jogo
-      const loc = window.location;
-      return `${loc.protocol}//${loc.host}/api/signal`;
+      try {
+        const loc = window.location;
+        if (!loc || !loc.host || loc.protocol === "file:") {
+          return "http://localhost:5200/api/signal";
+        }
+        return `${loc.protocol}//${loc.host}/api/signal`;
+      } catch (e) {
+        return "http://localhost:5200/api/signal";
+      }
     }
 
     generateRoomCode() {
@@ -87,6 +119,44 @@
       return code;
     }
 
+    async _setRemoteDescSafe(rawDesc) {
+      const clean = serializeDesc(rawDesc);
+      if (!clean) {
+        throw new Error("Descrição SDP remota inválida recebida.");
+      }
+      const desc = (typeof RTCSessionDescription !== "undefined")
+        ? new RTCSessionDescription(clean)
+        : clean;
+      await this.pc.setRemoteDescription(desc);
+      this._remoteDescriptionSet = true;
+
+      // Processa candidatos ICE enfileirados que chegaram antes da resposta/oferta SDP
+      if (this._pendingCandidates.length > 0) {
+        const queue = [...this._pendingCandidates];
+        this._pendingCandidates.length = 0;
+        for (const c of queue) {
+          await this._addIceCandidateSafe(c);
+        }
+      }
+    }
+
+    async _addIceCandidateSafe(rawCand) {
+      const clean = serializeCand(rawCand);
+      if (!clean) return;
+      if (!this._remoteDescriptionSet || !this.pc || !this.pc.remoteDescription) {
+        this._pendingCandidates.push(clean);
+        return;
+      }
+      try {
+        const cand = (typeof RTCIceCandidate !== "undefined")
+          ? new RTCIceCandidate(clean)
+          : clean;
+        await this.pc.addIceCandidate(cand);
+      } catch (err) {
+        console.warn("[Net] Candidato ICE ignorado:", err.message);
+      }
+    }
+
     /* =========================================================================
      * HOST: Criar Sala
      * ========================================================================= */
@@ -94,6 +164,8 @@
       this.disconnect();
       this.role = "host";
       this.status = "hosting";
+      this._remoteDescriptionSet = false;
+      this._pendingCandidates = [];
       this.roomCode = (customCode || this.generateRoomCode()).toUpperCase();
 
       this.pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
@@ -106,18 +178,26 @@
 
       this.pc.onicecandidate = async (e) => {
         if (e.candidate && this.status !== "disconnected") {
-          try {
-            await fetch(`${this.getSignalBaseUrl()}/candidate`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ code: this.roomCode, candidate: e.candidate, from: "host" })
-            });
-          } catch (err) {}
+          const clean = serializeCand(e.candidate);
+          if (clean) {
+            try {
+              await fetch(`${this.getSignalBaseUrl()}/candidate`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ code: this.roomCode, candidate: clean, from: "host" })
+              });
+            } catch (err) {}
+          }
         }
       };
 
-      const offer = await this.pc.createOffer();
-      await this.pc.setLocalDescription(offer);
+      const rawOffer = await this.pc.createOffer();
+      await this.pc.setLocalDescription(rawOffer);
+
+      const offer = serializeDesc(this.pc.localDescription || rawOffer);
+      if (!offer) {
+        throw new Error("Falha ao estruturar oferta WebRTC válida.");
+      }
 
       // Registra oferta no sinalizador
       try {
@@ -143,15 +223,17 @@
           const res = await fetch(`${this.getSignalBaseUrl()}/poll/${this.roomCode}?role=host`);
           if (!res.ok) return;
           const data = await res.json();
-          if (data.answer && !this.pc.currentRemoteDescription) {
-            await this.pc.setRemoteDescription(data.answer);
+          if (data.answer && !this._remoteDescriptionSet) {
+            await this._setRemoteDescSafe(data.answer);
           }
           if (data.candidates && data.candidates.length) {
             for (const c of data.candidates) {
-              await this.pc.addIceCandidate(c);
+              await this._addIceCandidateSafe(c);
             }
           }
-        } catch (e) {}
+        } catch (e) {
+          console.warn("[Net] Host polling warning:", e.message);
+        }
       }, 500);
     }
 
@@ -162,6 +244,8 @@
       this.disconnect();
       this.role = "client";
       this.status = "joining";
+      this._remoteDescriptionSet = false;
+      this._pendingCandidates = [];
       this.roomCode = String(roomCode || "").trim().toUpperCase();
 
       this.pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
@@ -173,13 +257,16 @@
 
       this.pc.onicecandidate = async (e) => {
         if (e.candidate && this.status !== "disconnected") {
-          try {
-            await fetch(`${this.getSignalBaseUrl()}/candidate`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ code: this.roomCode, candidate: e.candidate, from: "guest" })
-            });
-          } catch (err) {}
+          const clean = serializeCand(e.candidate);
+          if (clean) {
+            try {
+              await fetch(`${this.getSignalBaseUrl()}/candidate`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ code: this.roomCode, candidate: clean, from: "guest" })
+              });
+            } catch (err) {}
+          }
         }
       };
 
@@ -191,12 +278,17 @@
       }).then(r => r.json());
 
       if (!joinRes.ok || !joinRes.offer) {
-        throw new Error(joinRes.error || "Sala não encontrada");
+        throw new Error(joinRes.error || "Sala não encontrada ou host indisponível");
       }
 
-      await this.pc.setRemoteDescription(joinRes.offer);
-      const answer = await this.pc.createAnswer();
-      await this.pc.setLocalDescription(answer);
+      await this._setRemoteDescSafe(joinRes.offer);
+      const rawAnswer = await this.pc.createAnswer();
+      await this.pc.setLocalDescription(rawAnswer);
+
+      const answer = serializeDesc(this.pc.localDescription || rawAnswer);
+      if (!answer) {
+        throw new Error("Falha ao estruturar resposta WebRTC válida.");
+      }
 
       await fetch(`${this.getSignalBaseUrl()}/answer`, {
         method: "POST",
@@ -218,10 +310,12 @@
           const data = await res.json();
           if (data.candidates && data.candidates.length) {
             for (const c of data.candidates) {
-              await this.pc.addIceCandidate(c);
+              await this._addIceCandidateSafe(c);
             }
           }
-        } catch (e) {}
+        } catch (e) {
+          console.warn("[Net] Guest polling warning:", e.message);
+        }
       }, 500);
     }
 
@@ -368,6 +462,8 @@
       this.role = null;
       this.roomCode = null;
       this.latestWorldState = null;
+      this._remoteDescriptionSet = false;
+      this._pendingCandidates = [];
     }
   }
 

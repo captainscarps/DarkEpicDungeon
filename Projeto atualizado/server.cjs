@@ -40,6 +40,26 @@ setInterval(() => {
   }
 }, 60 * 1000);
 
+const sanitizeDesc = (desc) => {
+  if (!desc || typeof desc !== "object") return null;
+  const type = typeof desc.type === "string" ? desc.type.toLowerCase() : null;
+  const sdp = typeof desc.sdp === "string" ? desc.sdp : null;
+  if (!type || !sdp || !["offer", "answer", "pranswer", "rollback"].includes(type)) return null;
+  return { type, sdp };
+};
+
+const sanitizeCandidate = (cand) => {
+  if (!cand || typeof cand !== "object") return null;
+  if (!cand.candidate || typeof cand.candidate !== "string") return null;
+  const c = cand.candidate.trim();
+  if (!c || !c.startsWith("candidate:")) return null;
+  return {
+    candidate: c,
+    sdpMid: cand.sdpMid != null ? String(cand.sdpMid) : undefined,
+    sdpMLineIndex: cand.sdpMLineIndex != null ? Number(cand.sdpMLineIndex) : undefined
+  };
+};
+
 function handleP2PSignal(req, res, pathname, url) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
@@ -52,8 +72,9 @@ function handleP2PSignal(req, res, pathname, url) {
       try {
         const d = JSON.parse(body || "{}");
         const code = (d.code || Math.random().toString(36).substring(2, 6)).toUpperCase();
+        const hostOffer = sanitizeDesc(d.offer);
         signalRooms.set(code, {
-          code, hostOffer: d.offer || null, guestAnswer: null,
+          code, hostOffer, guestAnswer: null,
           hostCandidates: [], guestCandidates: [], updatedAt: Date.now()
         });
         res.writeHead(200, { "Content-Type": "application/json" });
@@ -85,7 +106,9 @@ function handleP2PSignal(req, res, pathname, url) {
         const code = String(d.code || "").toUpperCase();
         const r = signalRooms.get(code);
         if (!r) { res.writeHead(404, { "Content-Type": "application/json" }); return res.end(JSON.stringify({ error: "Sala não encontrada" })); }
-        r.guestAnswer = d.answer; r.updatedAt = Date.now();
+        const guestAnswer = sanitizeDesc(d.answer);
+        if (guestAnswer) r.guestAnswer = guestAnswer;
+        r.updatedAt = Date.now();
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ ok: true }));
       } catch (e) { res.writeHead(400); res.end(JSON.stringify({ error: e.message })); }
@@ -100,8 +123,11 @@ function handleP2PSignal(req, res, pathname, url) {
         const code = String(d.code || "").toUpperCase();
         const r = signalRooms.get(code);
         if (!r) { res.writeHead(404, { "Content-Type": "application/json" }); return res.end(JSON.stringify({ error: "Sala não encontrada" })); }
-        if (d.from === "host") r.hostCandidates.push(d.candidate);
-        else r.guestCandidates.push(d.candidate);
+        const cand = sanitizeCandidate(d.candidate);
+        if (cand) {
+          if (d.from === "host") r.hostCandidates.push(cand);
+          else r.guestCandidates.push(cand);
+        }
         r.updatedAt = Date.now();
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ ok: true }));
