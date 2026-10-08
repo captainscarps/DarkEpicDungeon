@@ -816,7 +816,7 @@ class Sd extends j.Scene{constructor(){super("Game")}create(){this.__cdP=null;co
     };
     if(window.DepthGateNet?.status==="connected"){
       const pingT=this.add.text(_-14,8,"🟢 P2P",{fontFamily:"monospace",fontSize:"9px",fontStyle:"bold",color:"#55ff77",stroke:"#000",strokeThickness:2}).setOrigin(1,0).setDepth(2000).setScrollFactor(0);
-      this.events.on("update",()=>{if(pingT&&pingT.active){const lat=window.DepthGateNet.latency||0;pingT.setText("🟢 P2P "+lat+"ms");pingT.setColor(lat>200?"#ff4444":lat>100?"#ffcc44":"#55ff77");}});
+      this.events.on("update",()=>{if(pingT&&pingT.active){const isP2P=window.DepthGateNet?.isP2P;const lat=window.DepthGateNet?.latency||0;if(isP2P){pingT.setText("🟢 P2P "+lat+"ms");pingT.setColor(lat>200?"#ff4444":lat>100?"#ffcc44":"#55ff77");}else{pingT.setText("🟡 RELAY "+(lat||"~90")+"ms");pingT.setColor("#ffcc44");}}});
     }
 
   }

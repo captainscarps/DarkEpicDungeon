@@ -11,16 +11,9 @@
   const ICE_SERVERS = [
     { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] },
     { urls: ['stun:stun2.l.google.com:19302', 'stun:stun3.l.google.com:19302'] },
+    { urls: ['stun:stun4.l.google.com:19302'] },
     { urls: ['stun:stun.cloudflare.com:3478'] },
-    {
-      urls: [
-        'turn:openrelay.metered.ca:80',
-        'turn:openrelay.metered.ca:443',
-        'turn:openrelay.metered.ca:443?transport=tcp'
-      ],
-      username: 'openrelay',
-      credential: 'openrelay'
-    }
+    { urls: ['stun:stun.services.mozilla.com:3478'] }
   ];
 
   // Configuração Supabase REST para troca de ofertas/respostas WebRTC
@@ -205,20 +198,81 @@
     } catch (e) {}
   }
 
+  // Funções de envio rápido para gameplay (DROP-STALE: NUNCA enfileira pacotes antigos de movimentação!)
+  const _inFlightGameplay = new Map();
+
+  async function sendFastGameplay(topic, data) {
+    if (_inFlightGameplay.get(topic)) return; // Drop stale frame! Apenas o pacote mais recente é transmitido
+    _inFlightGameplay.set(topic, true);
+    try {
+      const jsonStr = JSON.stringify(data);
+      const chunkSize = 70;
+      const rows = [];
+      const total = Math.ceil(jsonStr.length / chunkSize);
+      for (let i = 0; i < jsonStr.length; i += chunkSize) {
+        const part = jsonStr.substring(i, i + chunkSize);
+        rows.push({
+          mode: "endless",
+          player_name: topic,
+          class_id: part.substring(0, 24) || "X",
+          seed: part.substring(24, 56) || null,
+          version: part.substring(56, 70) || null,
+          depth: Math.floor(i / chunkSize) + 1,
+          score: total,
+          elapsed_ms: 0
+        });
+      }
+      await fetch(SUPA_URL, {
+        method: "POST",
+        headers: { ...SUPA_HEADERS, "Prefer": "return=minimal" },
+        body: JSON.stringify(rows)
+      });
+    } catch (e) {
+    } finally {
+      _inFlightGameplay.set(topic, false);
+    }
+  }
+
+  async function fetchFastGameplay(topic) {
+    try {
+      const res = await fetch(`${SUPA_URL}?player_name=eq.${topic}&order=id.desc&limit=10`, {
+        headers: SUPA_HEADERS
+      });
+      if (!res.ok) return null;
+      const rows = await res.json();
+      if (!rows || rows.length === 0) return null;
+      const total = rows[0].score;
+      if (!total || rows.length < total) return null;
+      const batch = rows.slice(0, total);
+      batch.sort((a, b) => (a.depth || 0) - (b.depth || 0));
+      let str = "";
+      for (let i = 0; i < total; i++) {
+        const r = batch[i];
+        if (!r) return null;
+        str += (r.class_id || "") + (r.seed || "") + (r.version || "");
+      }
+      return JSON.parse(str);
+    } catch (e) {
+      return null;
+    }
+  }
+
   // Aguarda até maxMs para que candidatos ICE locais sejam incorporados ao SDP
-  async function waitForIceGathering(pc, maxMs = 1800) {
+  async function waitForIceGathering(pc, maxMs = 2600) {
     if (!pc || pc.iceGatheringState === "complete") return;
     return new Promise((resolve) => {
-      const timer = setTimeout(() => {
-        if (pc) pc.removeEventListener("icegatheringstatechange", onState);
-        resolve();
-      }, maxMs);
-      function onState() {
-        if (pc.iceGatheringState === "complete") {
+      let done = false;
+      const finish = () => {
+        if (!done) {
+          done = true;
           clearTimeout(timer);
-          pc.removeEventListener("icegatheringstatechange", onState);
+          if (pc) pc.removeEventListener("icegatheringstatechange", onState);
           resolve();
         }
+      };
+      const timer = setTimeout(finish, maxMs);
+      function onState() {
+        if (pc.iceGatheringState === "complete") finish();
       }
       pc.addEventListener("icegatheringstatechange", onState);
     });
@@ -260,6 +314,8 @@
       this.listeners = new Map();
 
       // Utilitário de inputs para p2In em Game.update
+      Object.defineProperty(this, "isP2P", { get: () => !!(this.dc && this.dc.readyState === "open"), configurable: true });
+
       this.guestInputProxy = {
         axis: () => this.clientInputs.axis,
         aim: () => this.clientInputs.aim,
@@ -395,6 +451,8 @@
       // Cria DataChannel com ordenação garantida e baixa latência
       this.dc = this.pc.createDataChannel("depthgate", { ordered: true });
       this._setupDataChannel(this.dc);
+      this.pc.onconnectionstatechange = () => console.log("[Net] WebRTC connectionState:", this.pc?.connectionState);
+      this.pc.oniceconnectionstatechange = () => console.log("[Net] WebRTC iceConnectionState:", this.pc?.iceConnectionState);
 
       this.pc.onicecandidate = (e) => {
         if (e.candidate && this.status !== "disconnected") {
@@ -415,7 +473,7 @@
       await this.pc.setLocalDescription(rawOffer);
 
       // Aguarda até 1200ms para ICE incorporar candidatos locais e STUN diretamente no SDP
-      await waitForIceGathering(this.pc, 1200);
+      await waitForIceGathering(this.pc, 2600);
 
       const offer = serializeDesc(this.pc.localDescription || rawOffer);
       if (!offer) {
@@ -511,7 +569,7 @@
         // Fallback para inputs do Guest se DataChannel ainda nao abriu
         if (!(this.dc && this.dc.readyState === "open")) {
           try {
-            const inData = await supaFetch("dg_in_" + clean);
+            const inData = await fetchFastGameplay("dg_in_" + clean);
             if (inData && inData.msg && inData.ts > (this._lastSupaInRecv || 0)) {
               this._lastSupaInRecv = inData.ts;
               this._handleMessage(inData.msg);
@@ -627,7 +685,7 @@
       await this.pc.setLocalDescription(rawAnswer);
 
       // Aguarda até 1200ms para ICE reunir candidatos locais e STUN no SDP
-      await waitForIceGathering(this.pc, 1200);
+      await waitForIceGathering(this.pc, 2600);
 
       const answer = serializeDesc(this.pc.localDescription || rawAnswer);
       if (!answer) {
@@ -676,7 +734,7 @@
         // Fallback para WorldState do Host se DataChannel ainda nao abriu
         if (!(this.dc && this.dc.readyState === "open")) {
           try {
-            const wsData = await supaFetch("dg_ws_" + clean);
+            const wsData = await fetchFastGameplay("dg_ws_" + clean);
             if (wsData && wsData.msg && wsData.ts > (this._lastSupaWsRecv || 0)) {
               this._lastSupaWsRecv = wsData.ts;
               this._handleMessage(wsData.msg);
@@ -842,18 +900,21 @@
         attack: !!justDownAttack,
         dash: !!justDownDash,
         potion: !!justDownPotion,
-        skillIdx
+        skillIdx,
+        ts: Date.now()
       };
       if (this.dc && this.dc.readyState === "open") {
         try {
           this.dc.send(JSON.stringify(payload));
+          return;
         } catch (e) {}
-      } else if (this.roomCode) {
+      }
+      if (this.roomCode) {
         const now = Date.now();
-        if (now - (this._lastSupaInSent || 0) > 90) {
+        if (now - (this._lastSupaInSent || 0) > 100) {
           this._lastSupaInSent = now;
           const clean = getCleanTopicCode(this.roomCode);
-          supaPublish("dg_in_" + clean, { msg: payload, ts: now }).catch(() => {});
+          sendFastGameplay("dg_in_" + clean, payload);
         }
       }
     }
@@ -861,16 +922,19 @@
     sendWorldState(state) {
       if (this.status !== "connected" || this.role !== "host") return;
       state.t = "WORLD_STATE";
+      state.ts = Date.now();
       if (this.dc && this.dc.readyState === "open") {
         try {
           this.dc.send(JSON.stringify(state));
+          return;
         } catch (e) {}
-      } else if (this.roomCode) {
+      }
+      if (this.roomCode) {
         const now = Date.now();
-        if (now - (this._lastSupaWsSent || 0) > 90) {
+        if (now - (this._lastSupaWsSent || 0) > 100) {
           this._lastSupaWsSent = now;
           const clean = getCleanTopicCode(this.roomCode);
-          supaPublish("dg_ws_" + clean, { msg: state, ts: now }).catch(() => {});
+          sendFastGameplay("dg_ws_" + clean, state);
         }
       }
     }
