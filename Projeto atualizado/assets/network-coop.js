@@ -666,6 +666,11 @@
           }
           break;
 
+        case "GUEST_SELECT_HERO":
+          this.emit("guest:select-hero", msg.classId);
+          this.emit("message", msg);
+          break;
+
         case "INIT_RUN":
           this.emit("net:init-run", msg);
           break;
