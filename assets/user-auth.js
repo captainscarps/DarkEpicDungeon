@@ -380,6 +380,7 @@
       this.injectStyles();
       this.createBadge();
       this.createModal();
+      this.startSceneWatcher();
     }
 
     injectStyles() {
@@ -673,9 +674,41 @@
           <span class="platform-tag">${this.getPlatformLabel()}</span>
         </div>
       `;
+      b.style.display = "none";
       b.addEventListener("click", () => this.openModal());
       document.body.appendChild(b);
       this.badgeEl = b;
+    }
+
+    hideBadge() {
+      if (this.badgeEl) {
+        this.badgeEl.style.display = "none";
+      }
+    }
+
+    showBadge() {
+      if (this.badgeEl) {
+        this.badgeEl.style.display = "flex";
+      }
+    }
+
+    startSceneWatcher() {
+      if (this._watcherInterval) clearInterval(this._watcherInterval);
+      this._watcherInterval = setInterval(() => {
+        try {
+          const game = window.__DED_GAME || window.__game;
+          if (!game || !game.scene) return;
+          const active = game.scene.getScenes(true);
+          if (!active || !active.length) return;
+          const keys = active.map(s => s.sys?.settings?.key || s.scene?.key).filter(Boolean);
+          // O badge de perfil só deve aparecer no menu principal, nunca durante a gameplay
+          if (keys.some(k => ["Game", "Hub", "Traversal", "Cutscene", "VisualPrototype"].includes(k))) {
+            this.hideBadge();
+          } else if (keys.includes("MainMenu")) {
+            this.showBadge();
+          }
+        } catch (e) {}
+      }, 200);
     }
 
     getPlatformLabel() {

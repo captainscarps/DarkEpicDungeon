@@ -1,5 +1,5 @@
 // DEPTHGATE — service worker com rede prioritária para scripts e html:
-const CACHE = "ded-web-v3.6.0-auth-avatars";
+const CACHE = "ded-web-v3.7.0-fixes-perf";
 
 self.addEventListener("install", () => self.skipWaiting());
 
@@ -19,7 +19,7 @@ self.addEventListener("fetch", (e) => {
   if (new URL(req.url).pathname.match(/\.(mp4|webm)$/) || req.headers.has("range")) return;
   // sinalização de rede e ranking online sempre direto da rede
   if (new URL(req.url).pathname.includes("/api/") || new URL(req.url).pathname.endsWith("online-config.json")) return;
-  const isDynamic = req.mode === "navigate" || new URL(req.url).pathname.endsWith("/index.html") || new URL(req.url).pathname.includes("index-") || new URL(req.url).pathname.includes("network-coop");
+  const isDynamic = req.mode === "navigate" || new URL(req.url).pathname.endsWith("/index.html") || new URL(req.url).pathname.includes("index-") || new URL(req.url).pathname.includes("network-coop") || new URL(req.url).pathname.includes("user-auth");
   if (isDynamic) {
     e.respondWith(
       fetch(req, { cache: "no-cache" })
