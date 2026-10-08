@@ -77,37 +77,43 @@
       position: fixed;
       top: 14px;
       right: 14px;
-      z-index: 90;
-      background: rgba(18, 12, 6, 0.72);
+      z-index: 999;
+      background: rgba(18, 12, 6, 0.85);
       color: #c9a24a;
-      border: 1px solid rgba(201, 162, 74, 0.5);
+      border: 1px solid rgba(201, 162, 74, 0.6);
       border-radius: 8px;
-      width: 38px;
-      height: 38px;
+      width: 42px;
+      height: 42px;
       padding: 0;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      backdrop-filter: blur(4px);
+      backdrop-filter: blur(6px);
       transition: background 0.2s, transform 0.15s, border-color 0.2s, box-shadow 0.2s;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+    #fs-btn svg {
+      pointer-events: none;
     }
     #fs-btn:hover {
-      background: rgba(45, 30, 15, 0.95);
+      background: rgba(45, 30, 15, 0.98);
       border-color: #ffd24a;
       transform: scale(1.08);
-      box-shadow: 0 0 14px rgba(201, 162, 74, 0.5);
+      box-shadow: 0 0 16px rgba(201, 162, 74, 0.6);
     }
     #fs-btn:active {
-      transform: scale(0.94);
+      transform: scale(0.92);
     }
   </style>
-  <script src="./assets/network-coop.js?v=3.4"></script>
-  <script type="module" crossorigin src="./assets/index-D6qIWtA7-p209.js?v=3.4"></script>
+  <script src="./assets/network-coop.js?v=3.5"></script>
+  <script type="module" crossorigin src="./assets/index-D6qIWtA7-p209.js?v=3.5"></script>
 </head>
 <body>
   <div id="game"></div>
-  <button id="fs-btn" title="Tela Cheia (Clique para Tela Cheia sem F11)" aria-label="Tela Cheia">
+  <button id="fs-btn" type="button" title="Tela Cheia (Clique para Tela Cheia sem F11)" aria-label="Tela Cheia">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
       <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
     </svg>
@@ -122,33 +128,116 @@
   <script>
     (function() {
       const btn = document.getElementById("fs-btn");
+      const iconEnter = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>';
+      const iconExit = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/></svg>';
+
       function isFs() {
-        return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+        return !!(
+          document.fullscreenElement ||
+          document.webkitFullscreenElement ||
+          document.mozFullScreenElement ||
+          document.msFullscreenElement ||
+          (window.__DED_GAME && window.__DED_GAME.scale && window.__DED_GAME.scale.isFullscreen)
+        );
       }
-      function toggleFs() {
-        if (!isFs()) {
-          const el = document.documentElement;
-          const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
-          if (req) {
-            req.call(el, { navigationUI: "hide" }).catch(function() {});
+
+      function updateIcon() {
+        if (!btn) return;
+        const active = isFs();
+        btn.innerHTML = active ? iconExit : iconEnter;
+        btn.title = active ? "Sair da Tela Cheia" : "Tela Cheia (Clique sem F11)";
+        setTimeout(function() {
+          window.dispatchEvent(new Event("resize"));
+          if (window.__DED_GAME && window.__DED_GAME.scale) {
+            try { window.__DED_GAME.scale.refresh(); } catch(e) {}
+          }
+        }, 60);
+      }
+
+      function enterFs() {
+        const el = document.documentElement || document.body;
+        const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+        if (req) {
+          try {
+            const p = req.call(el, { navigationUI: "hide" });
+            if (p && typeof p.then === "function") {
+              p.then(updateIcon).catch(function() {
+                try {
+                  const p2 = req.call(el);
+                  if (p2 && typeof p2.then === "function") p2.then(updateIcon).catch(phaserFallback);
+                  else updateIcon();
+                } catch(e) { phaserFallback(); }
+              });
+              return;
+            }
+            updateIcon();
+            return;
+          } catch(e) {
+            try {
+              const p2 = req.call(el);
+              if (p2 && typeof p2.then === "function") p2.then(updateIcon).catch(phaserFallback);
+              else updateIcon();
+              return;
+            } catch(e2) {
+              phaserFallback();
+            }
           }
         } else {
-          const exit = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
-          if (exit) {
-            exit.call(document).catch(function() {});
-          }
+          phaserFallback();
         }
       }
-      if (btn) {
-        btn.addEventListener("click", toggleFs);
-        const iconEnter = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>';
-        const iconExit = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/></svg>';
-        function updateIcon() {
-          const active = isFs();
-          btn.innerHTML = active ? iconExit : iconEnter;
-          btn.title = active ? "Sair da Tela Cheia" : "Tela Cheia (Clique sem F11)";
-          window.dispatchEvent(new Event("resize"));
+
+      function phaserFallback() {
+        try {
+          if (window.__DED_GAME && window.__DED_GAME.scale) {
+            window.__DED_GAME.scale.startFullscreen();
+          }
+        } catch(e) {}
+        updateIcon();
+      }
+
+      function exitFs() {
+        const exit = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
+        if (exit) {
+          try {
+            const p = exit.call(document);
+            if (p && typeof p.then === "function") p.then(updateIcon).catch(function() {});
+          } catch(e) {}
         }
+        try {
+          if (window.__DED_GAME && window.__DED_GAME.scale && window.__DED_GAME.scale.isFullscreen) {
+            window.__DED_GAME.scale.stopFullscreen();
+          }
+        } catch(e) {}
+        updateIcon();
+      }
+
+      function toggleFs() {
+        if (isFs()) {
+          exitFs();
+        } else {
+          enterFs();
+        }
+      }
+
+      window.__toggleFullscreen = toggleFs;
+      window.__isFs = isFs;
+
+      if (btn) {
+        let lastClick = 0;
+        function onAction(e) {
+          if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+          const now = Date.now();
+          if (now - lastClick < 300) return;
+          lastClick = now;
+          toggleFs();
+        }
+
+        btn.addEventListener("click", onAction);
+        btn.addEventListener("pointerdown", function(e) { e.stopPropagation(); });
         document.addEventListener("fullscreenchange", updateIcon);
         document.addEventListener("webkitfullscreenchange", updateIcon);
         document.addEventListener("mozfullscreenchange", updateIcon);
