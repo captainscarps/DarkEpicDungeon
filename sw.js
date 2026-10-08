@@ -1,5 +1,5 @@
 // DEPTHGATE — service worker com rede prioritária para scripts e html:
-const CACHE = "ded-web-v3.8.0-endless-fixes";
+const CACHE = "ded-web-v3.9.0-clean-menu";
 
 self.addEventListener("install", () => self.skipWaiting());
 
