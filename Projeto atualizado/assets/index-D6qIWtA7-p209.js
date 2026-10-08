@@ -705,7 +705,29 @@ class Sd extends j.Scene{constructor(){super("Game")}create(){this.__cdP=null;co
       this.cameras.main.startFollow(this.player2,true,0.08,0.08);
       this.p1Marker=this.add.text(this.player.x,this.player.y-26,`P1 (${p1Label}) [Host]`,{fontFamily:"monospace",fontSize:"9px",color:"#a0c8ff",fontStyle:"bold"}).setOrigin(0.5);
       this.p2Marker=this.add.text(this.player2.x,this.player2.y-26,`P2 (${p2Label}) [Você]`,{fontFamily:"monospace",fontSize:"10px",color:"#ffd24a",fontStyle:"bold"}).setOrigin(0.5);
+      if(window.DepthGateNet){
+        const onNetEvent=(name,payload)=>{
+          if(name==="DESCEND"){
+            this.game.events.emit("ui:banner",W("g.descending"),"#9a7fd0");
+            this.cameraSys?.fadeOut?.(900,()=>{
+              this.scene.restart({
+                endless:true,
+                classId:this.classDef.id,
+                carry:{
+                  p1Score:this.p1Score,p2Score:this.p2Score,
+                  p1Revives:this.p1Revives,p2Revives:this.p2Revives,
+                  p2Potions:this.p2Potions
+                }
+              });
+            });
+          }
+        };
+        window.DepthGateNet.on("net:event",onNetEvent);
+        this.events.once("shutdown",()=>window.DepthGateNet.off("net:event",onNetEvent));
+      }
     } else if(netRole==="host"){
+      this.cameraSys&&(this.cameraSys.target=this.player);
+      this.cameras.main.startFollow(this.player,true,0.08,0.08);
       this.p1Marker=this.add.text(this.player.x,this.player.y-26,`P1 (${p1Label}) [Você]`,{fontFamily:"monospace",fontSize:"9px",color:"#ffd24a",fontStyle:"bold"}).setOrigin(0.5);
       this.p2Marker=this.add.text(this.player2.x,this.player2.y-26,`P2 (${p2Label}) [Rede]`,{fontFamily:"monospace",fontSize:"10px",color:"#7ac5ff",fontStyle:"bold"}).setOrigin(0.5);
       if(window.DepthGateNet?.status==="connected"){
@@ -715,83 +737,83 @@ class Sd extends j.Scene{constructor(){super("Game")}create(){this.__cdP=null;co
       this.cameras.main.stopFollow();
       this.p1Marker=this.add.text(this.player.x,this.player.y-26,`P1 (${p1Label})`,{fontFamily:"monospace",fontSize:"9px",color:"#ffd24a",fontStyle:"bold"}).setOrigin(0.5);
       this.p2Marker=this.add.text(this.player2.x,this.player2.y-26,`P2 (${p2Label})`,{fontFamily:"monospace",fontSize:"10px",color:"#7ac5ff",fontStyle:"bold"}).setOrigin(0.5);
-      this.coopScoreText=this.add.text(_/2,10,"",{fontFamily:"'Courier New', monospace",fontSize:"10px",fontStyle:"bold",color:"#ffffff",stroke:"#000000",strokeThickness:3}).setOrigin(0.5,0).setDepth(2000).setScrollFactor(0);
-      this.p2HpBar=this.add.graphics().setDepth(2001);
-      this.updateCoopHud=()=>{
-        if(!this.coopScoreText||!this.coopScoreText.active)return;
-        const p1R=this.p1Revives>0?"💚 [1/1]":"🖤 [0/1]";
-        const p2R=this.p2Revives>0?"💚 [1/1]":"🖤 [0/1]";
-        this.coopScoreText.setText(`P1 (${p1Label}): ${this.p1Score||0} pts (${p1R})   ✦   P2 (${p2Label}): ${this.p2Score||0} pts (${p2R})`);
-      };
-      this.updateCoopHud();
-      {const __td=this.player2.takeDamage.bind(this.player2);this.player2.takeDamage=(a,b)=>{const r=__td(a,b);this.game.events.emit("hud:hp",this.player.hp,this.player.maxHp);return r};}
       const __leash=()=>{const A=this.player,B=this.player2;if(!A||!B||A.dead||B.dead||!A.body||!B.body)return;const dx=A.x-B.x,dy=A.y-B.y,s=Math.hypot(dx,dy);if(s<440)return;const nx=dx/s,ny=dy/s;for(const[p,sg]of[[A,1],[B,-1]]){const v=p.body.velocity,out=(v.x*nx+v.y*ny)*sg;out>0&&p.setVelocity(v.x-nx*sg*out,v.y-ny*sg*out)}};
       this.events.on("postupdate",__leash);this.events.once("shutdown",()=>this.events.off("postupdate",__leash));
-
-      this.player.die=()=>{
-        if(this.player.dead)return;
-        if(this.player.isDowned){if(!(this.player2&&!this.player2.dead&&!this.player2.isDowned)){this.player.isDowned=false;this.player.dead=true;this.player.setVelocity(0,0);this.playerVisual?.playDeath();this.game.events.emit("state:gameover");}return;}
-        if(this.p1Revives>0){
-          this.p1Revives--;
-          this.player.hp=Math.round(this.player.maxHp*0.65);
-          this.player.dead=false;
-          this.player.isDowned=false;
-          this.player.invuln=3.0;this.game.events.emit("hud:hp",this.player.hp,this.player.maxHp);
-          this.effectsRef?.shockwaveRing(this.player.x,this.player.y,50);
-          this.effectsRef?.burstTinted(this.player.x,this.player.y,5635959,20);
-          this.effectsRef?.floatText(this.player.x,this.player.y-30,"✨ REVIVE P1! (Usado)","#55ff77",14);
-          this.game.audioEngine?.stinger?.("level_up")||this.audioRef?.play?.("sfx-level-up");
-          this.updateCoopHud?.();
-          return;
-        }
-        if(this.player2&&!this.player2.dead&&!this.player2.isDowned){
-          this.player.isDowned=true;
-          this.player.downedTimer=25;
-          this.player.hp=0;
-          this.player.setVelocity(0,0);
-          this.effectsRef?.burstTinted(this.player.x,this.player.y,16729156,12);
-          this.effectsRef?.floatText(this.player.x,this.player.y-30,"⚠️ P1 CAÍDO! AJUDE!","#ff5555",13);
-          this.updateCoopHud?.();
-          return;
-        }
-        this.player.dead=true;
-        this.player.setVelocity(0,0);
-        this.playerVisual?.playDeath();
-        this.game.events.emit("state:gameover");
-      };
-
-      this.player2.die=()=>{
-        if(this.player2.dead)return;
-        if(this.player2.isDowned){if(!(!this.player.dead&&!this.player.isDowned)){this.player2.isDowned=false;this.player2.dead=true;this.player2.setVelocity(0,0);this.player2Visual?.playDeath?.();this.game.events.emit("state:gameover");}return;}
-        if(this.p2Revives>0){
-          this.p2Revives--;
-          this.player2.hp=Math.round(this.player2.maxHp*0.65);
-          this.player2.dead=false;
-          this.player2.isDowned=false;
-          this.player2.invuln=3.0;
-          this.effectsRef?.shockwaveRing(this.player2.x,this.player2.y,50);
-          this.effectsRef?.burstTinted(this.player2.x,this.player2.y,5635959,20);
-          this.effectsRef?.floatText(this.player2.x,this.player2.y-30,"✨ REVIVE P2! (Usado)","#55ff77",14);
-          this.game.audioEngine?.stinger?.("level_up")||this.audioRef?.play?.("sfx-level-up");
-          this.updateCoopHud?.();
-          return;
-        }
-        if(!this.player.dead&&!this.player.isDowned){
-          this.player2.isDowned=true;
-          this.player2.downedTimer=25;
-          this.player2.hp=0;
-          this.player2.setVelocity(0,0);
-          this.effectsRef?.burstTinted(this.player2.x,this.player2.y,4473343,12);
-          this.effectsRef?.floatText(this.player2.x,this.player2.y-30,"⚠️ P2 CAÍDO! AJUDE!","#ff5555",13);
-          this.updateCoopHud?.();
-          return;
-        }
-        this.player2.dead=true;
-        this.player2.setVelocity(0,0);
-        this.player2Visual?.playDeath?.();
-        this.game.events.emit("state:gameover");
-      };
     }
+    this.coopScoreText=this.add.text(_/2,10,"",{fontFamily:"'Courier New', monospace",fontSize:"10px",fontStyle:"bold",color:"#ffffff",stroke:"#000000",strokeThickness:3}).setOrigin(0.5,0).setDepth(2000).setScrollFactor(0);
+    this.p2HpBar=this.add.graphics().setDepth(2001);
+    this.updateCoopHud=()=>{
+      if(!this.coopScoreText||!this.coopScoreText.active)return;
+      const p1R=this.p1Revives>0?"💚 [1/1]":"🖤 [0/1]";
+      const p2R=this.p2Revives>0?"💚 [1/1]":"🖤 [0/1]";
+      this.coopScoreText.setText(`P1 (${p1Label}): ${this.p1Score||0} pts (${p1R})   ✦   P2 (${p2Label}): ${this.p2Score||0} pts (${p2R})`);
+    };
+    this.updateCoopHud();
+    {const __td=this.player2.takeDamage.bind(this.player2);this.player2.takeDamage=(a,b)=>{const r=__td(a,b);if(netRole!=="client")this.game.events.emit("hud:hp",this.player.hp,this.player.maxHp);return r};}
+
+    this.player.die=()=>{
+      if(this.player.dead)return;
+      if(this.player.isDowned){if(!(this.player2&&!this.player2.dead&&!this.player2.isDowned)){this.player.isDowned=false;this.player.dead=true;this.player.setVelocity(0,0);this.playerVisual?.playDeath();this.game.events.emit("state:gameover");}return;}
+      if(this.p1Revives>0){
+        this.p1Revives--;
+        this.player.hp=Math.round(this.player.maxHp*0.65);
+        this.player.dead=false;
+        this.player.isDowned=false;
+        this.player.invuln=3.0;if(netRole!=="client")this.game.events.emit("hud:hp",this.player.hp,this.player.maxHp);
+        this.effectsRef?.shockwaveRing(this.player.x,this.player.y,50);
+        this.effectsRef?.burstTinted(this.player.x,this.player.y,5635959,20);
+        this.effectsRef?.floatText(this.player.x,this.player.y-30,"✨ REVIVE P1! (Usado)","#55ff77",14);
+        this.game.audioEngine?.stinger?.("level_up")||this.audioRef?.play?.("sfx-level-up");
+        this.updateCoopHud?.();
+        return;
+      }
+      if(this.player2&&!this.player2.dead&&!this.player2.isDowned){
+        this.player.isDowned=true;
+        this.player.downedTimer=25;
+        this.player.hp=0;
+        this.player.setVelocity(0,0);
+        this.effectsRef?.burstTinted(this.player.x,this.player.y,16729156,12);
+        this.effectsRef?.floatText(this.player.x,this.player.y-30,"⚠️ P1 CAÍDO! AJUDE!","#ff5555",13);
+        this.updateCoopHud?.();
+        return;
+      }
+      this.player.dead=true;
+      this.player.setVelocity(0,0);
+      this.playerVisual?.playDeath();
+      this.game.events.emit("state:gameover");
+    };
+
+    this.player2.die=()=>{
+      if(this.player2.dead)return;
+      if(this.player2.isDowned){if(!(!this.player.dead&&!this.player.isDowned)){this.player2.isDowned=false;this.player2.dead=true;this.player2.setVelocity(0,0);this.player2Visual?.playDeath?.();this.game.events.emit("state:gameover");}return;}
+      if(this.p2Revives>0){
+        this.p2Revives--;
+        this.player2.hp=Math.round(this.player2.maxHp*0.65);
+        this.player2.dead=false;
+        this.player2.isDowned=false;
+        this.player2.invuln=3.0;if(netRole==="client")this.game.events.emit("hud:hp",this.player2.hp,this.player2.maxHp);
+        this.effectsRef?.shockwaveRing(this.player2.x,this.player2.y,50);
+        this.effectsRef?.burstTinted(this.player2.x,this.player2.y,5635959,20);
+        this.effectsRef?.floatText(this.player2.x,this.player2.y-30,"✨ REVIVE P2! (Usado)","#55ff77",14);
+        this.game.audioEngine?.stinger?.("level_up")||this.audioRef?.play?.("sfx-level-up");
+        this.updateCoopHud?.();
+        return;
+      }
+      if(!this.player.dead&&!this.player.isDowned){
+        this.player2.isDowned=true;
+        this.player2.downedTimer=25;
+        this.player2.hp=0;
+        this.player2.setVelocity(0,0);
+        this.effectsRef?.burstTinted(this.player2.x,this.player2.y,4473343,12);
+        this.effectsRef?.floatText(this.player2.x,this.player2.y-30,"⚠️ P2 CAÍDO! AJUDE!","#ff5555",13);
+        this.updateCoopHud?.();
+        return;
+      }
+      this.player2.dead=true;
+      this.player2.setVelocity(0,0);
+      this.player2Visual?.playDeath?.();
+      this.game.events.emit("state:gameover");
+    };
     if(window.DepthGateNet?.status==="connected"){
       const pingT=this.add.text(_-14,8,"🟢 P2P",{fontFamily:"monospace",fontSize:"9px",fontStyle:"bold",color:"#55ff77",stroke:"#000",strokeThickness:2}).setOrigin(1,0).setDepth(2000).setScrollFactor(0);
       this.events.on("update",()=>{if(pingT&&pingT.active){const lat=window.DepthGateNet.latency||0;pingT.setText("🟢 P2P "+lat+"ms");pingT.setColor(lat>200?"#ff4444":lat>100?"#ffcc44":"#55ff77");}});
@@ -832,24 +854,44 @@ if(isCoopBoss){
   }
 };const o=d.encounter==="first"?Yt[i].firstEncounter:null;o&&(this.boss.maxHp=Math.round(this.boss.maxHp*o.hpMult),this.boss.hp=this.boss.maxHp,this.boss.xp=o.xp,this.boss.fleeAtRatio=o.fleeAt,this.boss.bossDamageMult=o.damageMult,this.boss.phaseDefs=o.phases,this.boss.data_={...this.boss.data_,contactDamage:o.contactDamage??this.boss.data_.contactDamage,gold:o.gold,loot:o.loot,lootFanfare:!1,exclusiveLoot:null,attackPools:o.attackPools,attackCooldownMs:o.attackCooldownMs},this.boss.attackCooldown=o.attackCooldownMs/1e3*.6);const a=d.encounter==="enraged"?Yt[i].enraged:null;a&&(this.boss.phaseDefs=a.phases,this.boss.data_={...this.boss.data_,attackPools:a.attackPools,attackCooldownMs:this.boss.data_.attackCooldownMs*a.cooldownMult});const n=this.endlessRun();if(n){const r=Ph(n.depth,this.stats?.level??1);this.boss.maxHp=Math.round(this.boss.maxHp*r.hpMultiplier),this.boss.hp=this.boss.maxHp,this.boss.bossDamageMult=r.damageMultiplier,this.boss.damageTakenMult=r.damageTakenMultiplier/Math.pow(2,__nmOf(this)),this.endlessRun?.()?.difficulty==="hard"&&(this.boss.maxHp*=3,this.boss.hp=this.boss.maxHp),this.boss.data_={...this.boss.data_,speed:this.boss.data_.speed*r.speedMultiplier,attackCooldownMs:this.boss.data_.attackCooldownMs*r.cooldownMultiplier};const l=d.variant?mr[i]:this.level.bossVariant;l&&(this.boss.data_={...this.boss.data_,name:St(`bossvar.${i}`,l.name)},this.boss.maxHp=Math.round(this.boss.maxHp*l.hpMult),this.boss.hp=this.boss.maxHp,this.boss.bossDamageMult*=l.damageMult,this.boss.setTint(l.tint),this.boss.variantTint=l.tint)}else{const l=__HUBD.includes(this.levelId)||this.levelId==="castle"?__dgScale(this,!0):Dh(__stLvl(this)+1,0);this.boss.maxHp=Math.round(this.boss.maxHp*l.hpMultiplier*(this.game.registry.get("campaign:difficulty")==="hard"?3:1)),this.boss.hp=this.boss.maxHp,this.boss.bossDamageMult=(this.boss.bossDamageMult??1)*l.damageMultiplier,this.boss.damageTakenMult=l.damageTakenMultiplier,this.boss.data_={...this.boss.data_,speed:this.boss.data_.speed*l.speedMultiplier,attackCooldownMs:this.boss.data_.attackCooldownMs*l.cooldownMultiplier}}this.physics.add.collider(this.boss,this.dungeon.wallLayer),this.physics.add.collider(this.boss,this.dungeon.solids),this.physics.add.collider(this.boss,this.roomManager.doorsGroup),this.physics.add.overlap(this.player,this.boss,(r,l)=>{if(l.dead||r.dead||this.state!=="playing")return;const h=r.x-l.x,u=r.y-l.y,p=Math.hypot(h,u)||1;this.damageSystem.apply({source:l,target:r,amount:l.data_.contactDamage,dir:{x:h/p,y:u/p}})});const s=this.level.theme.lights.BOSS;return this.lighting.addLight({follow:this.boss,radius:s.radius,intensity:s.intensity,flicker:s.flicker,warm:!0,color:s.color}),this.boss}onBossDefeated(i){this.boss=null,this.game.registry.inc("campaign:bosses",1),i.typeKey==="DRAGON_ANCIENT"&&!this.endlessRun()&&this.game.registry.set("campaign:dragon","slain");const t=this.endlessRun();t&&t.bossesKilled++,this.roomManager.onBossDefeated(i),this.requestSave(1200)}onBossFled(i){this.boss=null,this.endlessRun()||this.game.registry.set("campaign:dragon","fled"),this.roomManager.onBossFled(i),this.requestSave(1400)}onAutosaveEvent(){this.requestSave()}onRoomClearedEndless(i,t){const e=this.endlessRun();if(!e)return;e.roomsCleared++;const d=t?.def;if(d){if(d.roomType==="ELITE"&&d.eliteReward){e.bonusScore+=250;const o=t.centerPx();this.spawnRewardChest(o.x,o.y,d.eliteReward),this.game.events.emit("ui:banner",W("g.specialReward"),"#ffd24a")}if(d.challenge&&this.challenge?.roomId===d.id){if(!this.challenge.failed){e.bonusScore+=400;const o=t.centerPx();this.spawnRewardChest(o.x,o.y,d.challenge.rewardTier),this.game.events.emit("ui:banner",W("g.challengeDone"),"#8ae0b0"),this.audio.play("sfx-challenge-success")}this.endChallenge()}}this.updateEndlessScore()}descendEndless(){const i=this.endlessRun();if(!i||this.transitioning)return;this.transitioning=!0,this.endChallenge(),i.depth++,i.maxDepth=Math.max(i.maxDepth??i.depth,i.depth),i.pendingBlessing=!0,this.updateEndlessScore(),this.audio.play("sfx-endless-descent"),this.game.events.emit("ui:banner",W("g.descending"),"#9a7fd0");if(window.DepthGateNet?.status==="connected")window.DepthGateNet.sendGameEvent("DESCEND",{depth:i.depth});if(this.player2){this.p1Score=(this.p1Score||0)+500;this.p2Score=(this.p2Score||0)+500;this.updateCoopHud?.();}const t={level:this.stats.level,xp:this.stats.xp,gold:this.stats.gold,hp:this.player.hp,resource:this.resource.current,potions:this.potions.count,skills:this.skillState,items:[...this.inventory.items],equipment:{...this.inventory.equipment},p1Score:this.p1Score,p2Score:this.p2Score,p1Kills:this.p1Kills,p2Kills:this.p2Kills,p1Damage:this.p1Damage,p2Damage:this.p2Damage,p1Revives:this.p1Revives,p2Revives:this.p2Revives,p2Potions:this.p2Potions},e=this.classDef.id;this.cameraSys.fadeOut(900,()=>this.scene.restart({endless:!0,classId:e,carry:t}))}spawnRewardChest(i,t,e){const d=Math.floor(i/dt),o=Math.floor(t/dt)+1,a=new ms(this,{type:"chest",col:d,row:o,tier:e},this.dungeon.solids);this.dungeon.objects.push(a),this.effects.burstTinted(a.x,a.y,16765514,16),this.effects.shockwaveRing(a.x,a.y,30)}startChallenge(i){this.endChallenge();const t=i.def.challenge;this.challenge={roomId:i.def.id,until:this.time.now+t.timeLimitSec*1e3,failed:!1,timer:this.time.addEvent({delay:250,loop:!0,callback:()=>{const e=Math.max(0,Math.ceil((this.challenge.until-this.time.now)/1e3));e<=0&&!this.challenge.failed&&(this.challenge.failed=!0,this.game.events.emit("ui:banner",W("g.timeUp"),"#e05a4a")),this.game.events.emit("challenge:tick",e,this.challenge.failed)}})},this.game.events.emit("challenge:tick",t.timeLimitSec,!1)}endChallenge(){this.challenge?.timer?.remove(),this.challenge=null,this.game.events.emit("challenge:tick",null)}onEventOffer(i,t){this.uiOpen=!0,this.pendingEvent={def:i,altar:t}}onEventResolve(i,t=0){const e=this.pendingEvent;if(this.pendingEvent=null,this.uiOpen=!1,!e)return;if(!i){this.audio.play("sfx-event-refuse");return}const{def:d,altar:o}=e,a=this.endlessRun(),n=a?.depth??1,s=h=>{const u=Math.min(this.player.hp-1,Math.ceil(this.player.maxHp*h));u>0&&(this.player.hp-=u,this.game.events.emit("hud:hp",this.player.hp,this.player.maxHp),this.effects.floatText(this.player.x,this.player.y-24,`-${u} HP`,"#e05a4a"),this.cameraSys.shake(.008,220))},r=h=>this.stats.gold<h?(this.effects.floatText(o.x,o.y-26,W("g.goldInsufficient"),"#e05a4a"),this.audio.play("sfx-event-refuse"),!1):(this.stats.addGold(-h),this.effects.floatText(this.player.x,this.player.y-24,W("g.goldCost",{n:h}),"#c9a24a"),!0),l=h=>{if(h){if(h.kind==="item")this.lootSystem.openChestOfTier({x:o.x,y:o.y},h.chestTier);else if(h.kind==="chest"){const u=We(n);this.spawnRewardChest(o.x,o.y+24,h.tierBoost?xs(u):u)}}};switch(d.kind){case"blood-for-loot":s(d.hpCostPct),l(d.reward);break;case"merchant":{const h=d.basePrice+n*d.pricePerDepth;if(!r(h))return;l(d.reward);break}case"gold-for-loot":if(!r(d.goldCost))return;l(d.reward);break;case"cursed-fountain":{let h=Math.random()*d.outcomes.reduce((p,v)=>p+v.chance,0),u=d.outcomes[0];for(const p of d.outcomes)if(h-=p.chance,h<=0){u=p;break}u.buff&&this.stats.addBuff(u.buff.stat,u.buff.amount,u.buff.durationSec),u.healPct&&(this.player.hp=Math.min(this.player.maxHp,this.player.hp+Math.ceil(this.player.maxHp*u.healPct)),this.game.events.emit("hud:hp",this.player.hp,this.player.maxHp)),this.effects.floatText(o.x,o.y-30,St(`ev.${d.id}.out${d.outcomes.indexOf(u)}`,u.message),u.curse?"#e05a4a":"#8ae0b0",11),u.curse&&this.cameraSys.shake(.007,250);break}case"risky-treasure":{l(d.reward);const h=Math.floor(o.x/dt),u=Math.floor(o.y/dt),p=[[-2,0],[2,0],[0,-2],[0,2]];for(let v=0;v<(d.ambushCount??4);v++){const[f,m]=p[v%p.length],g=this.spawnEnemy(this.pickAmbushType(),h+f,u+m,{eliteRoll:!1});this.effects.burstTinted(g.x,g.y,14172224,8)}this.game.events.emit("ui:banner",W("g.ambush"),"#e05a4a"),this.game.events.emit("hud:enemies",this.aliveEnemies());break}case"statue-choice":{const h=d.options[t]??d.options[0];this.stats.addBuff(h.buff.stat,h.buff.amount,h.buff.durationSec),this.effects.floatText(o.x,o.y-30,St(`ev.${d.id}.out${d.options.indexOf(h)}`,h.message),"#8ae0b0",11);break}default:s(d.hpCostPct??0),l(d.reward)}o.consume(),this.audio.play("sfx-event-accept"),a&&(a.bonusScore+=150,this.updateEndlessScore())}pickAmbushType(){const i={catacombs:["SKELETON","GHOST","SKELETON_WARRIOR"],ruins:["GOBLIN","ORC","GOBLIN_ARCHER"],fortress:["DRAGON_WYRMLING","HARPY","DRAGON_KNIGHT"],frozen:["ICE_SKELETON","FROST_WOLF","FROST_GOBLIN"]},t=i[this.level.biome]??i.catacombs;return t[Math.floor(Math.random()*t.length)]}onSecretFound(){const i=this.endlessRun();i&&(i.bonusScore+=300,this.updateEndlessScore())}onSecretOpened(){const i=this.endlessRun();i&&(i.bonusScore+=150,this.updateEndlessScore())}onBossRushCleared(i){const t=this.endlessRun(),e=i.def.bossRush?.length??2,d=i.centerPx(),o=300+t.depth*15;this.stats.addXp(o),this.effects.floatText(this.player.x,this.player.y-30,`+${o} XP`,"#ffd24a",13),this.lootSystem.spawnGold(d.x-30,d.y+20,80+t.depth*3),this.spawnRewardChest(d.x+30,d.y,"BOSS"),t&&(t.bonusScore+=800*e,this.updateEndlessScore()),this.audio.play("sfx-boss-rush-complete"),this.effects.shockwaveRing(d.x,d.y,130),this.time.delayedCall(1e3,()=>{this.scene.isActive()&&this.game.events.emit("ui:banner",W("g.bossRushDone"),"#ffd24a")})}onReplaySeed(){const i=this.endlessRun();if(!i)return;const t=this.classDef.id;this.game.registry.set("campaign:start",Date.now()),this.game.registry.set("campaign:kills",0),this.game.registry.set("campaign:bosses",0),this.game.registry.set("campaign:items",0),this.game.registry.set("campaign:goldCollected",0),this.game.registry.set("endless:run",Wn(t,1,i.seed)),this.audio.play("sfx-endless-start"),this.cameraSys.fadeOut(350,()=>{this.game.events.emit("state:playing"),this.scene.restart({endless:!0,classId:t})})}updateEndlessScore(){const i=this.endlessRun();i&&(i.elapsedMs=Date.now()-i.startTime,i.score=Yn(i),this.emitEndlessHud(i))}emitEndlessHud(i){this.game.events.emit("hud:endless",{depth:i.depth,score:i.score,seed:i.seed})}aliveEnemies(){return this.enemies.getChildren().filter(i=>i.active&&!i.dead).length}onContact(i,t){if(t.dead||i.dead||this.state!=="playing")return;const e=i.x-t.x,d=i.y-t.y,o=Math.sqrt(e*e+d*d)||1;i.takeDamage(t.damage,{x:e/o,y:d/o})&&(t.onDealtDamage?.(),t.ai?.onDealtContact(),this.cameraSys.shake(.007,130),this.audio.play(Ct.PLAYER_HURT))}onEnemyDied(i){this.audio.play(Ct.ENEMY_DEATH),this.game.registry.inc("campaign:kills",1),i&&(this.lastCorpse={x:i.x,y:i.y,until:this.time.now+6e3});const t=this.endlessRun();t&&i&&(t.enemiesKilled++,i.isElite&&t.elitesKilled++,t.maxLevel=Math.max(t.maxLevel,this.stats.level),this.updateEndlessScore());if(this.player2&&i){const pts=(i.isBoss?2000:i.isElite?350:80);if(i._lastHitter==="p2"&&this.time.now-(i._lastHitT||0)<600){this.p2Kills=(this.p2Kills||0)+1;this.p2Score=(this.p2Score||0)+pts;}else{this.p1Kills=(this.p1Kills||0)+1;this.p1Score=(this.p1Score||0)+pts;}this.updateCoopHud?.();}i&&(this.stats.addXp(i.xp),this.effects.floatText(i.x,i.y-20,`+${i.xp} XP`,"#c9a24a"),this.lootSystem.dropFromEnemy(i)),this.game.events.emit("hud:enemies",this.aliveEnemies()),this.roomManager.onEnemyDied()}applyWorldRestore(i){const __bossFix=r=>{if(!r.hasBoss)return!1;const L=this.levelId;return __HUBD.includes(L)?!__hasItem(this,__CRY[L])&&!(i.player?.items||[]).some(q=>q?.id===__CRY[L]):L==="castle"&&!i.campaign?.completed};for(const[d,o]of Object.entries(i.campaign.rooms??{})){const a=this.roomManager.byId.get(d);a&&(a.discovered=!!o.discovered,o.state==="cleared"&&!__bossFix(a)&&(a.state="cleared",a.hasChallenge&&this.roomManager.clearedCount++))}const t=new Set(i.world?.openedChests??[]);for(const d of this.dungeon.objects)d instanceof ms&&t.has(`${d.def.col},${d.def.row}`)&&(d.opened=!0,d.setTexture("chest-open"));const e=this.roomManager.byId.get(i.campaign.roomId);if(e){const d=e.centerPx();this.player.setPosition(d.x,d.y)}{const rm=this.roomManager;if(!this.level.endless&&this.level.next&&!rm.portal&&rm.totalCombatRooms>0&&(rm.clearedCount>=rm.totalCombatRooms||__cdBossDone(rm))){const R=[...rm.byId.values()],br=R.find(q=>q.hasBoss&&q.state==="cleared")??R.filter(q=>q.state==="cleared"&&q.hasChallenge).pop();if(br){const c=br.centerPx();rm.portal=new ha(this,c.x,c.y+40),rm.spawnMerchant?.(br),rm.__lvDone=!0}}}this.game.events.emit("hud:progress",this.roomManager.clearedCount,this.roomManager.totalCombatRooms)}requestSave(i=400){this.game.registry.get("mode")!=="endless"&&(this.saveTimer?.remove(),this.saveTimer=this.time.delayedCall(i,()=>{this.state!=="playing"&&this.state!=="victory"||(this.game.events.emit("save:saving"),di(this))}))}onEquipmentVisual(){this.playerVisual?.refreshEquipment(this.inventory)}onLevelUp(i){this.player.hp=this.player.maxHp,this.game.events.emit("hud:hp",this.player.hp,this.player.maxHp),this.effects.levelUpBurst(this.player),this.cameraSys.shake(.006,200),this.audio.play(Ct.LEVEL_UP),this.game.audioEngine?.stinger?.("level_up")}onInventoryToggle(i){if(this.uiOpen=i,this.time.paused=i,i){this.tweens.pauseAll(),this.player.setVelocity(0,0);for(const t of this.enemies.getChildren())t.active&&!t.dead&&t.setVelocity(0,0);for(const t of this.minions)t.active&&!t.dead&&t.setVelocity(0,0);this.boss?.setVelocity?.(0,0)}else this.tweens.resumeAll()}onGameOver(){this.state==="playing"&&(this.state="gameover"),this.audio.setState("DEFEAT"),this.endChallenge();const i=this.endlessRun();if(i&&!i.finished){i.finished=!0;const t=Xo(i);t.fragments=Dl(i);if(this.player2){t.coopStats={p1Class:this.classDef?.id,p2Class:this.p2ClassDef?.id,p1Score:this.p1Score||0,p2Score:this.p2Score||0,p1Kills:this.p1Kills||0,p2Kills:this.p2Kills||0,p1Damage:this.p1Damage||0,p2Damage:this.p2Damage||0,p1Revives:this.p1Revives,p2Revives:this.p2Revives};}this.audio.play("sfx-endless-death"),t.newRecord&&this.audio.play("sfx-endless-new-record"),this.game.events.emit("endless:ended",t)}}onVictory(){if(this.state==="playing"&&(this.state="victory"),this.audio.setState("VICTORY"),this.game.registry.get("mode")==="endless")return;const i=wl(this.classDef.id);i&&this.game.events.emit("class:unlocked",i),kr(this.game),di(this)}onRestart(){this.cameraSys.fadeOut(350,()=>{this.scene.stop("UI"),this.scene.start("ClassSelect")})}goToMenu(){const i=this.game.registry.get("mode")==="endless";this.state==="playing"&&!i&&di(this),this.cameraSys.fadeOut(350,()=>{this.scene.stop("UI"),this.scene.start("MainMenu")})}findInteractable(){const i=this.player;let t=null,e=30;for(const o of this.groundItems){const a=j.Math.Distance.Between(o.x,o.y,i.x,i.y);a<e&&(t={kind:"item",target:o,label:W("g.pickup",{name:o.label})},e=a)}for(const o of this.dungeon.objects){const a=o.interactLabel;if(!a||typeof o.interact!="function")continue;const n=j.Math.Distance.Between(o.x,o.y,i.x,i.y);n<Math.max(e,40)&&(t={kind:"object",target:o,label:a},e=n)}for(const o of this.roomManager.doors){const a=o.interactLabel;if(!a)continue;const n=j.Math.Distance.Between(o.x,o.y,i.x,i.y);n<Math.max(e,46)&&(t={kind:"object",target:o,label:a},e=n)}if(this.__guard){const gn=j.Math.Distance.Between(this.__guard.x,this.__guard.y,i.x,i.y);gn<Math.max(e,46)&&(t={kind:"guardian",target:this.__guard,label:"Falar com a Guardiã"},e=gn)}for(const hp of this.__hubPortals??[]){const nn=j.Math.Distance.Between(hp.x,hp.y,i.x,i.y);nn<Math.max(e,hp.__level==="castle"?54:40)&&(t={kind:"hubportal",target:hp,label:hp.__label()},e=nn)}const d=this.roomManager.portal;return d&&(this.level.next||this.level.endless)&&j.Math.Distance.Between(d.x,d.y,i.x,i.y)<Math.max(e,44)&&(t={kind:"portal",target:d,label:this.level.endless?W("g.descend"):W("g.enter",{name:St(`lvl.${this.level.next}`,ki[this.level.next].name)})}),t}pickup(i){t0:{const it=i.payload?.item;it?.type==="quest"&&this.time.delayedCall(30,()=>__hubOnPickup(this,it))}const t=i.payload,e=this.endlessRun();if(t.gold){const d=Math.round(t.gold*(1+this.getBlessingBonus("goldMult")));this.stats.addGold(d),this.game.registry.inc("campaign:goldCollected",d),e&&(e.goldCollected+=d),this.effects.floatText(i.x,i.y-14,W("g.gold",{n:d}),"#c9a24a"),this.audio.play(Ct.ITEM_PICKUP),i.destroy();return}if(t.item.type==="potion"){this.gainPotion(1)?(this.effects.floatText(i.x,i.y-14,W("g.potionPlus"),"#d84a6a"),this.audio.play(Ct.ITEM_PICKUP),i.destroy()):this.effects.floatText(i.x,i.y-14,W("g.potionsMax"),"#d84040");return}if(this.inventory.add(t.item)){if(this.tutorial?.onFirstItem(),this.game.registry.inc("campaign:items",1),e){e.itemsCollected++;const o=bt[t.item.rarity].order;(!e.bestItem||o>(bt[e.bestItem.rarity]?.order??-1))&&(e.bestItem={id:t.item.id,name:t.item.name,rarity:t.item.rarity})}const d=bt[t.item.rarity];this.effects.floatText(i.x,i.y-14,_t(t.item),"#"+d.color.toString(16).padStart(6,"0")),this.effects.burstTinted(i.x,i.y,d.color,6),this.audio.play(Ct.ITEM_PICKUP),i.destroy()}else this.effects.floatText(i.x,i.y-14,W("g.invFull"),"#d84040")}touchVisible(){return this.scene.get("UI")?.touchControls?.visible===!0}tryDash(){const i=this.player;if(this.state!=="playing"||this.uiOpen||i.dead||(this.dashCooldown??0)>0||i.dashTimer>0)return!1;const __lc=this.game.registry.get("mode")==="endless"&&!!this.game.registry.get("endless:coop")&&!(this.game?.registry?.get("endless:netRole")&&window.DepthGateNet?.status==="connected"),t=__lc?null:this.inputMgr?.aim(),e=this.getAxis();let d=t??(Math.hypot(e.x,e.y)>.1?e:i.facing);const o=Math.hypot(d.x,d.y)||1;d={x:d.x/o,y:d.y/o},this.dashCooldown=we.COOLDOWN_SEC,i.dashDir=d,i.dashTimer=we.DURATION_MS/1e3,i.dashSpeed=we.DISTANCE/(we.DURATION_MS/1e3),i.invuln=Math.max(i.invuln,we.INVULN_SEC),this.audio.play("sfx-dash"),this.playerVisual?.setTintAll?.(14217983),this.audio.play("sfx-rogue-shadow-step"),this.cameraSys.shake(.0018,70);for(let a=0;a<4;a++)this.time.delayedCall(a*42,()=>{i.body&&this.effects.burstTinted(i.x,i.y,12111064,5)});return this.time.delayedCall(we.DURATION_MS,()=>{i.body&&(this.effects.burstTinted(i.x,i.y+8,9080698,6),this.playerVisual?.clearTintAll?.())}),this.game.events.emit("haptic","dash"),!0}requestMeleeSlot(i,t){this.meleeSlots=this.meleeSlots??new Set;for(const e of this.meleeSlots)(!e.active||e.dead)&&this.meleeSlots.delete(e);return this.meleeSlots.has(i)?t>150?(this.meleeSlots.delete(i),!1):!0:this.meleeSlots.size<2?(this.meleeSlots.add(i),!0):!1}tryAttackWithAssist(){const isProj=this.classDef.attackType==="projectile"||this.combat?.getWeaponKey?.()==="bow"||oe[this.combat?.getWeaponKey?.()]?.delivery==="arrow";if(isProj){const q=__aimDir(this,this.classDef.basicProjectile?.speed??420);q&&(this.player.facing={x:q.x,y:q.y},q.x!==0&&this.player.setFlipX(q.x<0))}this.combat.tryAttack()}getAxis(){const isCoopRun=this.game?.registry?.get("mode")==="endless"&&!!this.game?.registry?.get("endless:coop")&&!(this.game?.registry?.get("endless:netRole")&&window.DepthGateNet?.status==="connected");if(isCoopRun){const kx=(this.inputMgr?.keysDown?.has("KeyD")?1:0)-(this.inputMgr?.keysDown?.has("KeyA")?1:0);const ky=(this.inputMgr?.keysDown?.has("KeyS")?1:0)-(this.inputMgr?.keysDown?.has("KeyW")?1:0);return kx!==0&&ky!==0?{x:kx*Math.SQRT1_2,y:ky*Math.SQRT1_2}:{x:kx,y:ky};}const i=this.inputMgr?.keyboardAxis()??{x:0,y:0},t=this.inputMgr?.axis()??{x:0,y:0};return Math.hypot(t.x,t.y)>Math.hypot(i.x,i.y)?t:i}update(i,t){const e=Math.min(t/1e3,.05);if(this.freezeTimer>0){this.freezeTimer-=e,this.player.setVelocity(0,0),this.lighting.update(i),this.debug.update(),this.playerVisual.update(e,this.player);return}if(this.state==="playing"&&!this.uiOpen){this.inputMgr?.update(),(this.dashCooldown??0)>0&&(this.dashCooldown-=e);
 const isCoopRun=this.game.registry.get("mode")==="endless"&&!!this.game.registry.get("endless:coop");
-const isLocalCoop=isCoopRun&&!(this.game.registry.get("endless:netRole")&&window.DepthGateNet?.status==="connected");const p1In=this.inputMgr?.forPlayer?this.inputMgr.forPlayer(0,isLocalCoop):null;
 const netRole=this.game.registry.get("endless:netRole");
-const p2In=(netRole==="host"&&window.DepthGateNet?.status==="connected")?window.DepthGateNet.guestInputProxy:(this.inputMgr?.forPlayer?this.inputMgr.forPlayer(1,isCoopRun):null);
+const isOnlineCoop=isCoopRun&&!!(netRole&&window.DepthGateNet?.status==="connected");
+const isLocalCoop=isCoopRun&&!isOnlineCoop;
+
+const clientLocalIn=(netRole==="client")?{
+  axis:()=>this.getAxis(),
+  aim:()=>this.inputMgr?.aim()||this.getAxis(),
+  justDown:(a)=>{
+    if(a==="ATTACK")return !!this.inputMgr?.justDown?.("ATTACK")||(this.input?.activePointer?.isDown&&this.time.now-(this._lastAtkTime||0)>320);
+    return !!this.inputMgr?.justDown?.(a);
+  },
+  isDown:(a)=>!!this.inputMgr?.isDown?.(a)
+}:null;
+
+const p1In=(netRole==="client")?null:(this.inputMgr?.forPlayer?this.inputMgr.forPlayer(0,isLocalCoop):null);
+const p2In=(netRole==="host"&&window.DepthGateNet?.status==="connected")?window.DepthGateNet.guestInputProxy:(netRole==="client"?clientLocalIn:(this.inputMgr?.forPlayer?this.inputMgr.forPlayer(1,isCoopRun):null));
+
 if(this.p1Marker&&this.player)this.p1Marker.setPosition(this.player.x,this.player.y-26);
+
 if(netRole==="host"&&window.DepthGateNet?.status==="connected"&&this.player2){
   const now=Date.now();
   if(now-(this._lastNetSync||0)>33){
     this._lastNetSync=now;
-    const enemiesList=this.enemies.getChildren().filter(q=>q.active&&!q.dead).map(q=>({x:Math.round(q.x),y:Math.round(q.y),hp:q.hp,maxHp:q.maxHp,flipX:!!q.flipX}));
+    const enemiesList=this.enemies.getChildren().map((q,idx)=>({i:idx,x:Math.round(q.x),y:Math.round(q.y),hp:q.hp,maxHp:q.maxHp,flipX:!!q.flipX,dead:!!q.dead||!q.active}));
     window.DepthGateNet.sendWorldState({
       p1:{x:Math.round(this.player.x),y:Math.round(this.player.y),hp:this.player.hp,maxHp:this.player.maxHp,flipX:!!this.player.flipX,downed:!!this.player.isDowned},
       p2:{x:Math.round(this.player2.x),y:Math.round(this.player2.y),hp:this.player2.hp,maxHp:this.player2.maxHp,flipX:!!this.player2.flipX,downed:!!this.player2.isDowned},
+      p1Score:this.p1Score||0,
+      p2Score:this.p2Score||0,
+      p1Revives:this.p1Revives??1,
+      p2Revives:this.p2Revives??1,
       boss:this.boss&&!this.boss.dead?{x:Math.round(this.boss.x),y:Math.round(this.boss.y),hp:this.boss.hp,maxHp:this.boss.maxHp,flipX:!!this.boss.flipX}:null,
       boss2:this.boss2&&!this.boss2.dead?{x:Math.round(this.boss2.x),y:Math.round(this.boss2.y),hp:this.boss2.hp,maxHp:this.boss2.maxHp,flipX:!!this.boss2.flipX}:null,
       enemies:enemiesList
     });
   }
 }
+
 if(netRole==="client"&&window.DepthGateNet?.status==="connected"&&this.player2){
   const myAx=this.getAxis();
   const myAim=this.inputMgr?.aim()||myAx;
@@ -860,23 +902,56 @@ if(netRole==="client"&&window.DepthGateNet?.status==="connected"&&this.player2){
   window.DepthGateNet.sendInputs(myAx,myAim,atk,dsh,pot);
   const st=window.DepthGateNet.latestWorldState;
   if(st){
-    if(st.p1&&this.player){this.player.setPosition(st.p1.x,st.p1.y);this.player.hp=st.p1.hp;this.player.isDowned=st.p1.downed;this.player.setFlipX(st.p1.flipX);}
-    if(st.p2&&this.player2){this.player2.hp=st.p2.hp;this.player2.isDowned=st.p2.downed;}
+    if(st.p1&&this.player){
+      this.player.setPosition(st.p1.x,st.p1.y);
+      this.player.hp=st.p1.hp;
+      this.player.maxHp=st.p1.maxHp||this.player.maxHp;
+      this.player.isDowned=st.p1.downed;
+      this.player.setFlipX(st.p1.flipX);
+      this.player.setVelocity(0,0);
+    }
+    if(st.p2&&this.player2){
+      this.player2.hp=st.p2.hp;
+      this.player2.maxHp=st.p2.maxHp||this.player2.maxHp;
+      this.player2.isDowned=st.p2.downed;
+      const drift=Math.hypot(this.player2.x-st.p2.x,this.player2.y-st.p2.y);
+      if(drift>35||this.player2.isDowned){
+        this.player2.setPosition(st.p2.x,st.p2.y);
+      } else if(drift>3){
+        this.player2.x+=(st.p2.x-this.player2.x)*0.18;
+        this.player2.y+=(st.p2.y-this.player2.y)*0.18;
+      }
+    }
+    if(st.p1Score!==undefined)this.p1Score=st.p1Score;
+    if(st.p2Score!==undefined)this.p2Score=st.p2Score;
+    if(st.p1Revives!==undefined)this.p1Revives=st.p1Revives;
+    if(st.p2Revives!==undefined)this.p2Revives=st.p2Revives;
+    this.updateCoopHud?.();
+    this.game.events.emit("hud:hp",this.player2.hp,this.player2.maxHp);
     if(st.boss&&this.boss){this.boss.setPosition(st.boss.x,st.boss.y);this.boss.hp=st.boss.hp;this.boss.setFlipX(st.boss.flipX);}
     if(st.boss2&&this.boss2){this.boss2.setPosition(st.boss2.x,st.boss2.y);this.boss2.hp=st.boss2.hp;this.boss2.setFlipX(st.boss2.flipX);}
     if(st.enemies&&this.enemies){
       const enList=this.enemies.getChildren();
-      st.enemies.forEach((data,idx)=>{
-        if(idx<enList.length&&enList[idx].active){
-          enList[idx].setPosition(data.x,data.y);
-          enList[idx].hp=data.hp;
-          enList[idx].setFlipX(data.flipX);
+      for(let k=0;k<st.enemies.length;k++){
+        const data=st.enemies[k];
+        const en=enList[data.i!==undefined?data.i:k];
+        if(en){
+          if(data.dead&&!en.dead){
+            en.dead=true;
+            en.setActive(false);
+            en.setVisible(false);
+            en.body&&(en.body.enable=false);
+            en.setVelocity?.(0,0);
+          } else if(!data.dead&&en.active){
+            en.setPosition(data.x,data.y);
+            en.hp=data.hp;
+            en.setFlipX(data.flipX);
+          }
         }
-      });
+      }
     }
   }
 }
-
 
 if(this.player2&&!this.player2.dead){
   if(this.p2Marker)this.p2Marker.setPosition(this.player2.x,this.player2.y-26);
@@ -983,24 +1058,33 @@ if(this.player2&&!this.player2.dead){
   }
 
   if(this.cameras?.main&&(!this.player.dead||!this.player2.dead)){
-    const p1Active=!this.player.dead&&!this.player.isDowned;
-    const p2Active=!this.player2.dead&&!this.player2.isDowned;
-    let targetX=(p1Active&&p2Active)?(this.player.x+this.player2.x)/2:(p1Active?this.player.x:p2Active?this.player2.x:(this.player.x+this.player2.x)/2);
-    let targetY=(p1Active&&p2Active)?(this.player.y+this.player2.y)/2:(p1Active?this.player.y:p2Active?this.player2.y:(this.player.y+this.player2.y)/2);
     const cam=this.cameras.main;
-    if(isLocalCoop&&cam._follow)cam.stopFollow();
-    cam.scrollX+=(targetX-cam.width/2-cam.scrollX)*0.08;
-    cam.scrollY+=(targetY-cam.height/2-cam.scrollY)*0.08;
-    const sep=Math.hypot(this.player.x-this.player2.x,this.player.y-this.player2.y);
-    const targetZoom=Math.max(0.72,Math.min(Pt,Pt*(1-Math.max(0,sep-150)/600)));
-    cam.setZoom(cam.zoom+(targetZoom-cam.zoom)*0.05);
-
+    if(netRole==="client"){
+      const tgt=(!this.player2.dead)?this.player2:this.player;
+      cam.scrollX+=(tgt.x-cam.width/2-cam.scrollX)*0.1;
+      cam.scrollY+=(tgt.y-cam.height/2-cam.scrollY)*0.1;
+    }else if(netRole==="host"){
+      const tgt=(!this.player.dead)?this.player:this.player2;
+      cam.scrollX+=(tgt.x-cam.width/2-cam.scrollX)*0.1;
+      cam.scrollY+=(tgt.y-cam.height/2-cam.scrollY)*0.1;
+    }else{
+      const p1Active=!this.player.dead&&!this.player.isDowned;
+      const p2Active=!this.player2.dead&&!this.player2.isDowned;
+      let targetX=(p1Active&&p2Active)?(this.player.x+this.player2.x)/2:(p1Active?this.player.x:p2Active?this.player2.x:(this.player.x+this.player2.x)/2);
+      let targetY=(p1Active&&p2Active)?(this.player.y+this.player2.y)/2:(p1Active?this.player.y:p2Active?this.player2.y:(this.player.y+this.player2.y)/2);
+      if(isLocalCoop&&cam._follow)cam.stopFollow();
+      cam.scrollX+=(targetX-cam.width/2-cam.scrollX)*0.08;
+      cam.scrollY+=(targetY-cam.height/2-cam.scrollY)*0.08;
+      const sep=Math.hypot(this.player.x-this.player2.x,this.player.y-this.player2.y);
+      const targetZoom=Math.max(0.72,Math.min(Pt,Pt*(1-Math.max(0,sep-150)/600)));
+      cam.setZoom(cam.zoom+(targetZoom-cam.zoom)*0.05);
+    }
   }
 }
 
-const __tgt=(s)=>{if(!isLocalCoop||!this.player2||this.player2.dead||this.player2.isDowned)return this.player;if(this.player.dead||this.player.isDowned)return this.player2;return Math.hypot(s.x-this.player.x,s.y-this.player.y)<=Math.hypot(s.x-this.player2.x,s.y-this.player2.y)?this.player:this.player2};
-const p1Ax=(isLocalCoop&&this.player.isDowned)?{x:0,y:0}:isCoopRun?(p1In?.axis()??{x:0,y:0}):this.getAxis();
-const p1Aim=isCoopRun?p1In?.aim():this.inputMgr?.aim();
+const __tgt=(s)=>{if(!this.player2||this.player2.dead||this.player2.isDowned)return this.player;if(this.player.dead||this.player.isDowned)return this.player2;return Math.hypot(s.x-this.player.x,s.y-this.player.y)<=Math.hypot(s.x-this.player2.x,s.y-this.player2.y)?this.player:this.player2};
+const p1Ax=(isOnlineCoop&&netRole==="client")?{x:0,y:0}:(isLocalCoop&&this.player.isDowned)?{x:0,y:0}:isCoopRun?(p1In?.axis()??{x:0,y:0}):this.getAxis();
+const p1Aim=(isOnlineCoop&&netRole==="client")?null:isCoopRun?p1In?.aim():this.inputMgr?.aim();
 const hasP1Aim=!!(p1Aim&&Math.hypot(p1Aim.x,p1Aim.y)>0.1);
 if(hasP1Aim){
   this.player.facing={x:p1Aim.x,y:p1Aim.y};
@@ -1010,7 +1094,7 @@ if(hasP1Aim){
   if(p1Ax.x!==0)this.player.setFlipX(p1Ax.x<0);
 }
 
-const __p1K=(a)=>isLocalCoop?(!this.player.isDowned&&!!p1In?.justDown(a)):!!this.inputMgr?.justDown(a);
+const __p1K=(a)=>(isOnlineCoop&&netRole==="client")?!1:isLocalCoop?(!this.player.isDowned&&!!p1In?.justDown(a)):!!this.inputMgr?.justDown(a);
 __p1K("ATTACK")&&this.tryAttackWithAssist(),
 __p1K("ABILITY_1")&&this.abilities.tryUse(0),
 __p1K("ABILITY_2")&&this.abilities.tryUse(1),

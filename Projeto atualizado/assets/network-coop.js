@@ -206,7 +206,7 @@
   }
 
   // Aguarda até maxMs para que candidatos ICE locais sejam incorporados ao SDP
-  async function waitForIceGathering(pc, maxMs = 1200) {
+  async function waitForIceGathering(pc, maxMs = 1800) {
     if (!pc || pc.iceGatheringState === "complete") return;
     return new Promise((resolve) => {
       const timer = setTimeout(() => {
@@ -270,7 +270,8 @@
             return true;
           }
           return false;
-        }
+        },
+        isDown: (action) => false
       };
     }
 
@@ -507,6 +508,17 @@
           }
         } catch (e) {}
 
+        // Fallback para inputs do Guest se DataChannel ainda nao abriu
+        if (!(this.dc && this.dc.readyState === "open")) {
+          try {
+            const inData = await supaFetch("dg_in_" + clean);
+            if (inData && inData.msg && inData.ts > (this._lastSupaInRecv || 0)) {
+              this._lastSupaInRecv = inData.ts;
+              this._handleMessage(inData.msg);
+            }
+          } catch (e) {}
+        }
+
       }, 350);
     }
 
@@ -661,6 +673,17 @@
           }
         } catch (e) {}
 
+        // Fallback para WorldState do Host se DataChannel ainda nao abriu
+        if (!(this.dc && this.dc.readyState === "open")) {
+          try {
+            const wsData = await supaFetch("dg_ws_" + clean);
+            if (wsData && wsData.msg && wsData.ts > (this._lastSupaWsRecv || 0)) {
+              this._lastSupaWsRecv = wsData.ts;
+              this._handleMessage(wsData.msg);
+            }
+          } catch (e) {}
+        }
+
         // 2. Fallback: servidor local
         try {
           const res = await fetch(`${this.getSignalBaseUrl()}/poll/${this.roomCode}?role=guest`);
@@ -812,7 +835,7 @@
 
     sendInputs(axis, aim, justDownAttack, justDownDash, justDownPotion, skillIdx = null) {
       if (this.status !== "connected" || this.role !== "client") return;
-      this.send({
+      const payload = {
         t: "INPUTS",
         axis: { x: Number(axis.x.toFixed(2)), y: Number(axis.y.toFixed(2)) },
         aim: { x: Number(aim.x.toFixed(2)), y: Number(aim.y.toFixed(2)) },
@@ -820,13 +843,36 @@
         dash: !!justDownDash,
         potion: !!justDownPotion,
         skillIdx
-      });
+      };
+      if (this.dc && this.dc.readyState === "open") {
+        try {
+          this.dc.send(JSON.stringify(payload));
+        } catch (e) {}
+      } else if (this.roomCode) {
+        const now = Date.now();
+        if (now - (this._lastSupaInSent || 0) > 90) {
+          this._lastSupaInSent = now;
+          const clean = getCleanTopicCode(this.roomCode);
+          supaPublish("dg_in_" + clean, { msg: payload, ts: now }).catch(() => {});
+        }
+      }
     }
 
     sendWorldState(state) {
       if (this.status !== "connected" || this.role !== "host") return;
       state.t = "WORLD_STATE";
-      this.send(state);
+      if (this.dc && this.dc.readyState === "open") {
+        try {
+          this.dc.send(JSON.stringify(state));
+        } catch (e) {}
+      } else if (this.roomCode) {
+        const now = Date.now();
+        if (now - (this._lastSupaWsSent || 0) > 90) {
+          this._lastSupaWsSent = now;
+          const clean = getCleanTopicCode(this.roomCode);
+          supaPublish("dg_ws_" + clean, { msg: state, ts: now }).catch(() => {});
+        }
+      }
     }
 
     sendGameEvent(name, payload = {}) {
@@ -841,6 +887,8 @@
         const clean = getCleanTopicCode(this.roomCode);
         supaDelete("dg_m_h_" + clean).catch(() => {});
         supaDelete("dg_m_c_" + clean).catch(() => {});
+        supaDelete("dg_in_" + clean).catch(() => {});
+        supaDelete("dg_ws_" + clean).catch(() => {});
       }
       if (this.dc) {
         try { this.dc.close(); } catch (e) {}
