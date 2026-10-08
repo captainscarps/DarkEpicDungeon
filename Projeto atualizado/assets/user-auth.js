@@ -1,7 +1,7 @@
 /**
  * DEPTHGATE — Módulo de Cadastro, Perfil e Autenticação de Usuário
- * Suporte a Supabase Auth, foto de perfil customizada (upload), avatares de heróis,
- * detecção automática de plataforma (Steam / Celular / Navegador) e exibição de foto no Ranking.
+ * Suporte a Supabase Cloud (tabela 'profiles' e Supabase Auth), fotos customizadas (upload otimizado),
+ * avatares de heróis, detecção automática de plataforma e sincronização entre múltiplos dispositivos/navegadores.
  */
 (function(window) {
   'use strict';
@@ -58,10 +58,29 @@
     return "data:image/svg+xml;utf8," + encodeURIComponent(svgStr);
   }
 
-  // Obter Data URL para avatar padrão de herói
   function getHeroAvatarDataUrl(heroId) {
     const hero = HERO_AVATARS[heroId] || HERO_AVATARS.warrior;
     return svgToDataUrl(hero.svg);
+  }
+
+  // Hash SHA-256 para senhas locais/tabela
+  async function hashPassword(password, salt = "depthgate_v1_") {
+    try {
+      if (window.crypto && window.crypto.subtle) {
+        const enc = new TextEncoder();
+        const data = enc.encode(salt + String(password));
+        const hashBuf = await window.crypto.subtle.digest("SHA-256", data);
+        const hashArr = Array.from(new Uint8Array(hashBuf));
+        return hashArr.map(b => b.toString(16).padStart(2, '0')).join('');
+      }
+    } catch (e) {}
+    let h = 0;
+    const str = salt + String(password);
+    for (let i = 0; i < str.length; i++) {
+      h = ((h << 5) - h) + str.charCodeAt(i);
+      h |= 0;
+    }
+    return "dg_" + Math.abs(h).toString(16);
   }
 
   // Detecção de Plataforma
@@ -70,12 +89,10 @@
       const qs = new URLSearchParams(window.location.search);
       if (qs.get("platform") === "steam") return "steam";
 
-      // Verificação de ambiente Steam (Greenworks / Steamworks.js / Electron com Steam)
       if (typeof window.greenworks !== "undefined" || typeof window.SteamAPI !== "undefined" || (window.process && window.process.versions && window.process.versions.steam)) {
         return "steam";
       }
 
-      // Verificação de Mobile / Tablet / Touch nativo
       const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       const isCoarse = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
       if (isMobileUA || isCoarse || typeof window.Capacitor !== "undefined" || typeof window.cordova !== "undefined") {
@@ -85,7 +102,7 @@
     return "browser";
   }
 
-  // Recupera credenciais do Supabase (prioriza config do jogo se disponível)
+  // Recupera credenciais do Supabase
   function getSupaConfig() {
     const cfg = { url: SUPA_DEFAULT_URL, anonKey: SUPA_DEFAULT_KEY };
     try {
@@ -111,7 +128,7 @@
     return h;
   }
 
-  // Classe Principal DepthGateUser
+  // Classe Principal DepthGateUserManager
   class DepthGateUserManager {
     constructor() {
       this.platform = detectPlatform();
@@ -119,15 +136,19 @@
       this.session = this.loadSession();
       this.modalEl = null;
       this.badgeEl = null;
+      this._profilesTableStatus = null; // null: desconhecido, true: disponível, false: ausente
+      this._avatarCache = new Map();
 
-      // Se for Steam ou Celular e o perfil ainda for padrão, atribui identidade automática
       this.applyPlatformDefaults();
 
-      // Injeta estilos e componentes visuais assim que o DOM estiver pronto
       if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", () => this.initUI());
+        document.addEventListener("DOMContentLoaded", () => {
+          this.initUI();
+          this.syncFromCloud();
+        });
       } else {
         this.initUI();
+        this.syncFromCloud();
       }
     }
 
@@ -138,7 +159,7 @@
       } catch (e) {}
       return {
         username: "Aventureiro",
-        avatarType: "hero", // "hero" ou "custom"
+        avatarType: "hero",
         avatarHero: "warrior",
         avatarCustom: null,
         email: null,
@@ -146,13 +167,18 @@
       };
     }
 
-    saveProfile(data) {
+    saveProfile(data, notifyCloud = false) {
       this.profile = { ...this.profile, ...data };
       try {
         localStorage.setItem(STORAGE_PROFILE_KEY, JSON.stringify(this.profile));
       } catch (e) {}
       this.updateBadge();
+      this.updateModalFields();
       window.dispatchEvent(new CustomEvent("depthgate:user_updated", { detail: this.profile }));
+
+      if (notifyCloud && this.profile.isRegistered) {
+        this.syncProfileToCloud().catch(() => {});
+      }
     }
 
     loadSession() {
@@ -199,7 +225,6 @@
       }
     }
 
-    // Retorna a URL da imagem atual do jogador (seja customizada ou de herói)
     getAvatarUrl(profile = this.profile) {
       if (profile && profile.avatarType === "custom" && profile.avatarCustom) {
         return profile.avatarCustom;
@@ -208,11 +233,9 @@
       return getHeroAvatarDataUrl(heroKey);
     }
 
-    // Retorna um avatar para qualquer jogador da lista do Ranking
     getRankingAvatar(playerRow) {
       if (!playerRow) return getHeroAvatarDataUrl("warrior");
-      
-      // Se tiver campo avatar explícito no objeto retornado do Supabase
+
       if (playerRow.avatar) {
         if (playerRow.avatar.startsWith("data:") || playerRow.avatar.startsWith("http")) {
           return playerRow.avatar;
@@ -222,13 +245,16 @@
         }
       }
 
-      // Se for o próprio jogador local
-      if (this.profile && this.profile.username && playerRow.player_name === this.profile.username) {
+      const pName = String(playerRow.player_name || playerRow.name || "").trim();
+      if (this.profile && this.profile.username && pName.toLowerCase() === this.profile.username.toLowerCase()) {
         return this.getAvatarUrl();
       }
 
-      // Mapeamento automático pela classe jogada
-      const cls = String(playerRow.class_id || "").toLowerCase();
+      if (this._avatarCache.has(pName.toLowerCase())) {
+        return this._avatarCache.get(pName.toLowerCase());
+      }
+
+      const cls = String(playerRow.class_id || playerRow.classId || "").toLowerCase();
       if (cls.includes("warrior") || cls.includes("guerreiro")) return getHeroAvatarDataUrl("warrior");
       if (cls.includes("berserker") || cls.includes("samurai")) return getHeroAvatarDataUrl("berserker");
       if (cls.includes("archer") || cls.includes("arqueiro")) return getHeroAvatarDataUrl("archer");
@@ -239,94 +265,331 @@
       return getHeroAvatarDataUrl("warrior");
     }
 
-    // ==================== Autenticação Supabase ====================
+    // ==================== Camada de Nuvem (Supabase) ====================
 
-    async registerWithSupabase(email, password, username, avatarData) {
+    // Verifica se a tabela 'public.profiles' existe no banco Supabase
+    async checkProfilesTable() {
+      if (this._profilesTableStatus !== null) return this._profilesTableStatus;
       const cfg = getSupaConfig();
-      const endpoint = `${cfg.url}/auth/v1/signup`;
-      const meta = {
-        username: username,
-        avatar_type: avatarData.avatarType,
-        avatar_hero: avatarData.avatarHero,
-        avatar_custom: avatarData.avatarCustom,
-        platform: this.platform
-      };
-
       try {
-        const res = await fetch(endpoint, {
+        const res = await fetch(`${cfg.url}/rest/v1/profiles?select=id&limit=1`, {
+          headers: getSupaHeaders()
+        });
+        this._profilesTableStatus = (res.status === 200);
+      } catch (e) {
+        this._profilesTableStatus = false;
+      }
+      return this._profilesTableStatus;
+    }
+
+    // Cadastro unificado: salva na nuvem (profiles table e/ou Supabase Auth)
+    async register(identifier, password, username, avatarData) {
+      const cfg = getSupaConfig();
+      const id = identifier.trim().toLowerCase();
+      const uname = (username || "Aventureiro").trim().slice(0, 24);
+      const isTableAvailable = await this.checkProfilesTable();
+
+      let registeredOnCloud = false;
+      let cloudErrorMsg = null;
+
+      // 1. Tenta salvar na tabela 'profiles' do banco de dados (sem limite de e-mail)
+      if (isTableAvailable) {
+        try {
+          // Verifica se id já existe
+          const checkRes = await fetch(`${cfg.url}/rest/v1/profiles?id=eq.${encodeURIComponent(id)}&select=id`, {
+            headers: getSupaHeaders()
+          });
+          const existing = await checkRes.json();
+          if (Array.isArray(existing) && existing.length > 0) {
+            throw new Error("Este e-mail ou nome de usuário já está cadastrado. Faça login na conta existente.");
+          }
+
+          const pwdHash = await hashPassword(password);
+          const row = {
+            id: id,
+            username: uname,
+            email: identifier.includes("@") ? identifier.trim() : null,
+            avatar_type: avatarData.avatarType || "hero",
+            avatar_hero: avatarData.avatarHero || "warrior",
+            avatar_custom: avatarData.avatarCustom || null,
+            platform: this.platform,
+            password_hash: pwdHash,
+            updated_at: new Date().toISOString()
+          };
+
+          const insRes = await fetch(`${cfg.url}/rest/v1/profiles`, {
+            method: "POST",
+            headers: { ...getSupaHeaders(), "Prefer": "return=representation" },
+            body: JSON.stringify(row)
+          });
+
+          if (!insRes.ok) {
+            const errJson = await insRes.json().catch(() => ({}));
+            throw new Error(errJson.message || "Erro ao salvar perfil no banco de dados.");
+          }
+
+          registeredOnCloud = true;
+          this.saveSession({
+            provider: "profiles_table",
+            id: id,
+            username: uname,
+            email: row.email,
+            hash: pwdHash
+          });
+        } catch (err) {
+          cloudErrorMsg = err.message;
+          if (err.message.includes("já está cadastrado")) throw err;
+        }
+      }
+
+      // 2. Tenta também Supabase Auth (caso o projeto use auth padrão ou confirmação desligada)
+      let authSession = null;
+      try {
+        const authEmail = identifier.includes("@") ? identifier.trim() : `${encodeURIComponent(id)}@depthgate.local`;
+        const authRes = await fetch(`${cfg.url}/auth/v1/signup`, {
           method: "POST",
           headers: getSupaHeaders(),
           body: JSON.stringify({
-            email: email,
+            email: authEmail,
             password: password,
-            data: meta
+            data: {
+              username: uname,
+              avatar_type: avatarData.avatarType,
+              avatar_hero: avatarData.avatarHero,
+              avatar_custom: avatarData.avatarCustom,
+              platform: this.platform
+            }
           })
         });
 
-        const data = await res.json();
-        if (!res.ok) {
-          throw new Error(data.msg || data.error_description || data.message || "Erro ao criar conta no Supabase");
+        if (authRes.ok) {
+          const authData = await authRes.json();
+          if (authData.access_token) {
+            authSession = authData;
+            this.saveSession(authData);
+            registeredOnCloud = true;
+          }
+        } else {
+          const authErr = await authRes.json().catch(() => ({}));
+          const errMsg = authErr.msg || authErr.error_description || authErr.message || "";
+          if (errMsg.includes("rate limit") || errMsg.includes("over_email_send_rate_limit")) {
+            // Limite de e-mails do Supabase
+            if (!registeredOnCloud) {
+              throw new Error(
+                "O Supabase atingiu o limite de envio de e-mails (3 e-mails/hora no plano gratuito). " +
+                "Para liberar o cadastro direto em múltiplos dispositivos sem limite: " +
+                "execute o script em 'supabase-ranking.sql' no SQL Editor do Supabase, ou desmarque 'Confirm email' em Authentication > Providers > Email no painel do Supabase."
+              );
+            }
+          }
         }
-
-        // Se cadastrou e já retornou sessão (sem confirmação de email necessária)
-        if (data.access_token) {
-          this.saveSession(data);
-        }
-
-        this.saveProfile({
-          username: username,
-          email: email,
-          avatarType: avatarData.avatarType,
-          avatarHero: avatarData.avatarHero,
-          avatarCustom: avatarData.avatarCustom,
-          isRegistered: true
-        });
-
-        return { success: true, user: data.user || data };
-      } catch (err) {
-        // Se houver limite de email ou erro de SMTP no Supabase, salva perfil localmente
-        if (err.message && err.message.includes("rate limit")) {
-          this.saveProfile({
-            username: username,
-            email: email,
-            avatarType: avatarData.avatarType,
-            avatarHero: avatarData.avatarHero,
-            avatarCustom: avatarData.avatarCustom,
-            isRegistered: true
-          });
-          return { success: true, offlineNotice: true };
-        }
-        throw err;
-      }
-    }
-
-    async loginWithSupabase(email, password) {
-      const cfg = getSupaConfig();
-      const endpoint = `${cfg.url}/auth/v1/token?grant_type=password`;
-
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: getSupaHeaders(),
-        body: JSON.stringify({ email: email, password: password })
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error_description || data.msg || data.message || "E-mail ou senha incorretos");
+      } catch (authErr) {
+        if (!registeredOnCloud) throw authErr;
       }
 
-      this.saveSession(data);
-      const uMeta = data.user?.user_metadata || {};
+      // Se não conseguiu salvar na nuvem por nenhuma das vias
+      if (!registeredOnCloud) {
+        const detail = cloudErrorMsg ? ` (${cloudErrorMsg})` : "";
+        throw new Error(
+          "Não foi possível salvar a conta na nuvem" + detail + ". " +
+          "Certifique-se de executar o script 'supabase-ranking.sql' no menu SQL Editor do Supabase para criar a tabela de perfis."
+        );
+      }
+
+      // Salva dados locais do perfil
       this.saveProfile({
-        username: uMeta.username || this.profile.username,
-        email: email,
-        avatarType: uMeta.avatar_type || this.profile.avatarType,
-        avatarHero: uMeta.avatar_hero || this.profile.avatarHero,
-        avatarCustom: uMeta.avatar_custom || this.profile.avatarCustom,
+        username: uname,
+        email: identifier.includes("@") ? identifier.trim() : id,
+        avatarType: avatarData.avatarType,
+        avatarHero: avatarData.avatarHero,
+        avatarCustom: avatarData.avatarCustom,
         isRegistered: true
       });
 
-      return { success: true, user: data.user };
+      return { success: true };
+    }
+
+    // Login unificado: pesquisa na nuvem e restaura perfil e foto
+    async login(identifier, password) {
+      const cfg = getSupaConfig();
+      const id = identifier.trim().toLowerCase();
+      const isTableAvailable = await this.checkProfilesTable();
+
+      let loginSuccess = false;
+
+      // 1. Tenta autenticação pela tabela 'profiles' do banco
+      if (isTableAvailable) {
+        try {
+          const query = `${cfg.url}/rest/v1/profiles?or=(id.eq.${encodeURIComponent(id)},username.ilike.${encodeURIComponent(id)})&limit=1`;
+          const res = await fetch(query, { headers: getSupaHeaders() });
+          if (res.ok) {
+            const rows = await res.json();
+            if (Array.isArray(rows) && rows.length > 0) {
+              const row = rows[0];
+              const pwdHash = await hashPassword(password);
+              if (row.password_hash === pwdHash) {
+                this.saveSession({
+                  provider: "profiles_table",
+                  id: row.id,
+                  username: row.username,
+                  email: row.email || identifier,
+                  hash: pwdHash
+                });
+                this.saveProfile({
+                  username: row.username,
+                  email: row.email || identifier,
+                  avatarType: row.avatar_type || "hero",
+                  avatarHero: row.avatar_hero || "warrior",
+                  avatarCustom: row.avatar_custom || null,
+                  isRegistered: true
+                });
+                loginSuccess = true;
+                return { success: true, profile: row };
+              } else {
+                throw new Error("Senha incorreta para esta conta.");
+              }
+            }
+          }
+        } catch (e) {
+          if (e.message && e.message.includes("Senha incorreta")) throw e;
+        }
+      }
+
+      // 2. Tenta login pelo Supabase GoTrue Auth
+      try {
+        const authEmail = identifier.includes("@") ? identifier.trim() : `${encodeURIComponent(id)}@depthgate.local`;
+        const endpoint = `${cfg.url}/auth/v1/token?grant_type=password`;
+        const res = await fetch(endpoint, {
+          method: "POST",
+          headers: getSupaHeaders(),
+          body: JSON.stringify({ email: authEmail, password: password })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.access_token) {
+          this.saveSession(data);
+          const uMeta = data.user?.user_metadata || {};
+          this.saveProfile({
+            username: uMeta.username || this.profile.username,
+            email: identifier.includes("@") ? identifier.trim() : id,
+            avatarType: uMeta.avatar_type || this.profile.avatarType,
+            avatarHero: uMeta.avatar_hero || this.profile.avatarHero,
+            avatarCustom: uMeta.avatar_custom || this.profile.avatarCustom,
+            isRegistered: true
+          });
+          loginSuccess = true;
+          return { success: true, user: data.user };
+        } else {
+          const msg = data.error_description || data.msg || data.message || "";
+          if (msg.includes("Email not confirmed")) {
+            throw new Error("E-mail não confirmado no Supabase. Desative a opção 'Confirm email' no painel Supabase para permitir login direto.");
+          }
+        }
+      } catch (authErr) {
+        if (loginSuccess) return { success: true };
+        throw new Error(authErr.message || "E-mail/usuário ou senha incorretos.");
+      }
+
+      if (!loginSuccess) {
+        throw new Error("Conta não encontrada. Verifique o usuário/e-mail ou crie uma nova conta.");
+      }
+    }
+
+    // Sincroniza alterações do perfil local com a nuvem
+    async syncProfileToCloud() {
+      if (!this.profile.isRegistered) return;
+      const cfg = getSupaConfig();
+      const id = (this.profile.email || this.profile.username || "").trim().toLowerCase();
+
+      // 1. Atualiza na tabela 'profiles'
+      const isTableAvailable = await this.checkProfilesTable();
+      if (isTableAvailable && id) {
+        try {
+          const updateData = {
+            username: this.profile.username,
+            avatar_type: this.profile.avatarType,
+            avatar_hero: this.profile.avatarHero,
+            avatar_custom: this.profile.avatarCustom,
+            platform: this.platform,
+            updated_at: new Date().toISOString()
+          };
+          await fetch(`${cfg.url}/rest/v1/profiles?id=eq.${encodeURIComponent(id)}`, {
+            method: "PATCH",
+            headers: { ...getSupaHeaders(), "Prefer": "return=minimal" },
+            body: JSON.stringify(updateData)
+          });
+        } catch (e) {}
+      }
+
+      // 2. Atualiza no Supabase Auth se houver token ativo
+      if (this.session && this.session.access_token) {
+        try {
+          await fetch(`${cfg.url}/auth/v1/user`, {
+            method: "PUT",
+            headers: getSupaHeaders(this.session.access_token),
+            body: JSON.stringify({
+              data: {
+                username: this.profile.username,
+                avatar_type: this.profile.avatarType,
+                avatar_hero: this.profile.avatarHero,
+                avatar_custom: this.profile.avatarCustom,
+                platform: this.platform
+              }
+            })
+          });
+        } catch (e) {}
+      }
+    }
+
+    // Puxa as últimas informações da nuvem na inicialização
+    async syncFromCloud() {
+      if (!this.profile.isRegistered && !this.session) return;
+      const cfg = getSupaConfig();
+      const id = (this.profile.email || this.session?.id || this.profile.username || "").trim().toLowerCase();
+
+      // 1. Tenta recuperar da tabela 'profiles'
+      const isTableAvailable = await this.checkProfilesTable();
+      if (isTableAvailable && id) {
+        try {
+          const res = await fetch(`${cfg.url}/rest/v1/profiles?id=eq.${encodeURIComponent(id)}&limit=1`, {
+            headers: getSupaHeaders()
+          });
+          if (res.ok) {
+            const rows = await res.json();
+            if (Array.isArray(rows) && rows.length > 0) {
+              const r = rows[0];
+              this.saveProfile({
+                username: r.username,
+                avatarType: r.avatar_type || "hero",
+                avatarHero: r.avatar_hero || "warrior",
+                avatarCustom: r.avatar_custom || null,
+                isRegistered: true
+              }, false);
+              return;
+            }
+          }
+        } catch (e) {}
+      }
+
+      // 2. Tenta recuperar de Supabase Auth
+      if (this.session && this.session.access_token) {
+        try {
+          const res = await fetch(`${cfg.url}/auth/v1/user`, {
+            headers: getSupaHeaders(this.session.access_token)
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const uMeta = data.user_metadata || {};
+            this.saveProfile({
+              username: uMeta.username || this.profile.username,
+              avatarType: uMeta.avatar_type || this.profile.avatarType,
+              avatarHero: uMeta.avatar_hero || this.profile.avatarHero,
+              avatarCustom: uMeta.avatar_custom || this.profile.avatarCustom,
+              isRegistered: true
+            }, false);
+          }
+        } catch (e) {}
+      }
     }
 
     logout() {
@@ -335,41 +598,40 @@
         email: null,
         isRegistered: false
       });
+      this.applyPlatformDefaults();
     }
 
-    // ==================== Otimizador de Foto (Canvas) ====================
-
+    // Processa imagem em miniatura compacta (64x64 JPEG ~2KB a 3KB)
     processImageFile(file) {
       return new Promise((resolve, reject) => {
         if (!file || !file.type.startsWith("image/")) {
-          return reject(new Error("Por favor, selecione um arquivo de imagem válido."));
+          return reject(new Error("Por favor, selecione um arquivo de imagem válido (JPG ou PNG)."));
         }
 
         const reader = new FileReader();
         reader.onload = (e) => {
           const img = new Image();
           img.onload = () => {
-            const size = 64; // Miniatura otimizada para ícones e ranking
+            const size = 64;
             const canvas = document.createElement("canvas");
             canvas.width = size;
             canvas.height = size;
             const ctx = canvas.getContext("2d");
 
-            // Recorte proporcional centralizado (aspect-fill)
+            // Recorte quadrado centralizado
             const minDim = Math.min(img.width, img.height);
             const sx = (img.width - minDim) / 2;
             const sy = (img.height - minDim) / 2;
 
             ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, size, size);
 
-            // Exporta como JPEG compacto (qualidade 85% ~ 2kb a 4kb)
             const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
             resolve(dataUrl);
           };
-          img.onerror = () => reject(new Error("Falha ao carregar a imagem."));
+          img.onerror = () => reject(new Error("Falha ao abrir a imagem. Tente outro arquivo."));
           img.src = e.target.result;
         };
-        reader.onerror = () => reject(new Error("Erro ao ler arquivo."));
+        reader.onerror = () => reject(new Error("Erro ao ler o arquivo selecionado."));
         reader.readAsDataURL(file);
       });
     }
@@ -397,8 +659,8 @@
           display: flex;
           align-items: center;
           gap: 10px;
-          background: rgba(18, 12, 6, 0.85);
-          border: 1px solid rgba(201, 162, 74, 0.6);
+          background: rgba(18, 12, 6, 0.88);
+          border: 1px solid rgba(201, 162, 74, 0.65);
           border-radius: 24px;
           padding: 4px 14px 4px 5px;
           cursor: pointer;
@@ -410,10 +672,10 @@
           touch-action: manipulation;
         }
         #dg-profile-badge:hover {
-          background: rgba(38, 24, 12, 0.95);
+          background: rgba(38, 24, 12, 0.96);
           border-color: #ffd24a;
           transform: scale(1.04);
-          box-shadow: 0 0 14px rgba(201, 162, 74, 0.5);
+          box-shadow: 0 0 14px rgba(201, 162, 74, 0.55);
         }
         #dg-profile-badge:active {
           transform: scale(0.96);
@@ -443,33 +705,33 @@
           color: #a89878;
         }
 
-        /* Modal Escuro Medieval */
+        /* Modal Medieval de Autenticação */
         #dg-auth-modal {
           display: none;
           position: fixed;
           inset: 0;
           z-index: 9999;
-          background: rgba(5, 3, 2, 0.85);
+          background: rgba(5, 3, 2, 0.88);
           backdrop-filter: blur(8px);
           align-items: center;
           justify-content: center;
           padding: 16px;
-          animation: dg-fade-in 0.25s ease-out;
+          animation: dg-fade-in 0.22s ease-out;
         }
         #dg-auth-modal.visible {
           display: flex;
         }
         @keyframes dg-fade-in {
-          from { opacity: 0; transform: scale(0.97); }
+          from { opacity: 0; transform: scale(0.96); }
           to { opacity: 1; transform: scale(1); }
         }
         .dg-modal-box {
           background: radial-gradient(ellipse at center, #1f140a 0%, #0d0804 100%);
           border: 2px solid #c9a24a;
           border-radius: 12px;
-          box-shadow: 0 0 32px rgba(0, 0, 0, 0.9), 0 0 20px rgba(201, 162, 74, 0.25);
+          box-shadow: 0 0 36px rgba(0, 0, 0, 0.95), 0 0 24px rgba(201, 162, 74, 0.3);
           width: 100%;
-          max-width: 460px;
+          max-width: 480px;
           max-height: 90vh;
           overflow-y: auto;
           color: #e8d8b8;
@@ -484,10 +746,11 @@
           background: none;
           border: none;
           color: #c9a24a;
-          font-size: 22px;
+          font-size: 24px;
           cursor: pointer;
           font-weight: bold;
           transition: transform 0.15s, color 0.15s;
+          line-height: 1;
         }
         .dg-modal-close:hover {
           color: #ffd24a;
@@ -499,13 +762,11 @@
           text-align: center;
           margin: 0 0 16px 0;
           letter-spacing: 2px;
-          text-shadow: 0 0 10px rgba(255, 210, 74, 0.4);
+          text-shadow: 0 0 12px rgba(255, 210, 74, 0.45);
         }
-
-        /* Abas do Modal */
         .dg-tabs {
           display: flex;
-          border-bottom: 1px solid rgba(201, 162, 74, 0.3);
+          border-bottom: 1px solid rgba(201, 162, 74, 0.35);
           margin-bottom: 20px;
         }
         .dg-tab-btn {
@@ -524,25 +785,23 @@
           font-weight: bold;
           border-bottom: 2px solid #ffd24a;
         }
-
-        /* Foto e Avatar Picker */
         .dg-avatar-preview-wrap {
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 12px;
-          margin-bottom: 20px;
+          gap: 10px;
+          margin-bottom: 18px;
         }
         .dg-avatar-large {
-          width: 80px;
-          height: 80px;
+          width: 76px;
+          height: 76px;
           border-radius: 50%;
           border: 3px solid #ffd24a;
           object-fit: cover;
-          box-shadow: 0 0 16px rgba(201, 162, 74, 0.4);
+          box-shadow: 0 0 18px rgba(201, 162, 74, 0.45);
         }
         .dg-upload-btn {
-          background: rgba(30, 20, 10, 0.9);
+          background: rgba(30, 20, 10, 0.95);
           border: 1px dashed #c9a24a;
           border-radius: 6px;
           padding: 6px 14px;
@@ -552,7 +811,7 @@
           transition: all 0.2s;
         }
         .dg-upload-btn:hover {
-          background: rgba(50, 32, 16, 0.95);
+          background: rgba(54, 34, 18, 0.98);
           border-style: solid;
           transform: scale(1.03);
         }
@@ -561,7 +820,7 @@
           gap: 8px;
           justify-content: center;
           flex-wrap: wrap;
-          margin-top: 6px;
+          margin-top: 4px;
         }
         .dg-hero-btn {
           width: 38px;
@@ -585,12 +844,10 @@
           box-shadow: 0 0 10px #ffd24a;
           transform: scale(1.15);
         }
-
-        /* Formulários e Inputs */
         .dg-form-group {
           display: flex;
           flex-direction: column;
-          gap: 6px;
+          gap: 5px;
           margin-bottom: 14px;
           text-align: left;
         }
@@ -612,7 +869,7 @@
         }
         .dg-input:focus {
           border-color: #ffd24a;
-          box-shadow: 0 0 8px rgba(255, 210, 74, 0.3);
+          box-shadow: 0 0 8px rgba(255, 210, 74, 0.35);
         }
         .dg-btn-primary {
           background: linear-gradient(180deg, #c9a24a 0%, #85611f 100%);
@@ -634,7 +891,7 @@
           box-shadow: 0 0 14px rgba(255, 210, 74, 0.5);
         }
         .dg-btn-secondary {
-          background: rgba(20, 14, 8, 0.8);
+          background: rgba(20, 14, 8, 0.85);
           border: 1px solid #85611f;
           color: #d8cdb4;
           font-size: 12px;
@@ -651,13 +908,24 @@
         }
         .dg-msg {
           font-size: 11px;
-          margin-top: 10px;
+          margin-top: 12px;
           text-align: center;
           font-family: 'Courier New', monospace;
-          min-height: 18px;
+          min-height: 20px;
+          line-height: 1.4;
         }
         .dg-msg.success { color: #8ae0b0; }
-        .dg-msg.error { color: #ff6b6b; }
+        .dg-msg.error { color: #ff7b7b; }
+        .dg-hint-box {
+          background: rgba(20, 14, 8, 0.6);
+          border: 1px solid rgba(201, 162, 74, 0.3);
+          border-radius: 6px;
+          padding: 8px 12px;
+          font-size: 10px;
+          color: #a89878;
+          line-height: 1.4;
+          margin-top: 12px;
+        }
       `;
       document.head.appendChild(style);
     }
@@ -666,7 +934,7 @@
       if (document.getElementById("dg-profile-badge")) return;
       const b = document.createElement("div");
       b.id = "dg-profile-badge";
-      b.title = "Clique para editar seu Perfil e Foto";
+      b.title = "Clique para gerenciar seu Perfil, Foto e Conta";
       b.innerHTML = `
         <img class="avatar-img" src="${this.getAvatarUrl()}" alt="Avatar" />
         <div class="user-meta">
@@ -681,15 +949,11 @@
     }
 
     hideBadge() {
-      if (this.badgeEl) {
-        this.badgeEl.style.display = "none";
-      }
+      if (this.badgeEl) this.badgeEl.style.display = "none";
     }
 
     showBadge() {
-      if (this.badgeEl) {
-        this.badgeEl.style.display = "flex";
-      }
+      if (this.badgeEl) this.badgeEl.style.display = "flex";
     }
 
     startSceneWatcher() {
@@ -701,7 +965,6 @@
           const active = game.scene.getScenes(true);
           if (!active || !active.length) return;
           const keys = active.map(s => s.sys?.settings?.key || s.scene?.key).filter(Boolean);
-          // O badge de perfil só deve aparecer no menu principal, nunca durante a gameplay
           if (keys.some(k => ["Game", "Hub", "Traversal", "Cutscene", "VisualPrototype"].includes(k))) {
             this.hideBadge();
           } else if (keys.includes("MainMenu")) {
@@ -714,7 +977,7 @@
     getPlatformLabel() {
       if (this.platform === "steam") return "STEAM";
       if (this.platform === "mobile") return "MOBILE";
-      if (this.profile.isRegistered) return "CONTA ATIVA";
+      if (this.profile.isRegistered) return "NUVEM ATIVA";
       return "CONVIDADO";
     }
 
@@ -728,18 +991,39 @@
       if (tag) tag.textContent = this.getPlatformLabel();
     }
 
+    updateModalFields() {
+      const m = this.modalEl;
+      if (!m) return;
+      const nameInp = m.querySelector("#dg-input-username");
+      if (nameInp && document.activeElement !== nameInp) {
+        nameInp.value = this.profile.username || "";
+      }
+      const preview = m.querySelector("#dg-modal-avatar-preview");
+      if (preview) preview.src = this.getAvatarUrl();
+
+      const heroBtns = m.querySelectorAll(".dg-hero-btn");
+      heroBtns.forEach(btn => {
+        if (this.profile.avatarType === "hero" && btn.dataset.hero === this.profile.avatarHero) {
+          btn.classList.add("selected");
+        } else {
+          btn.classList.remove("selected");
+        }
+      });
+      this.refreshAuthViews();
+    }
+
     createModal() {
       if (document.getElementById("dg-auth-modal")) return;
       const m = document.createElement("div");
       m.id = "dg-auth-modal";
       m.innerHTML = `
         <div class="dg-modal-box">
-          <button class="dg-modal-close" type="button">&times;</button>
+          <button class="dg-modal-close" type="button" aria-label="Fechar">&times;</button>
           <div class="dg-modal-title">PERFIL DO JOGADOR</div>
 
           <div class="dg-tabs">
             <button class="dg-tab-btn active" data-tab="profile" type="button">MEU PERFIL</button>
-            <button class="dg-tab-btn" data-tab="online" type="button">CONTA ONLINE (SUPABASE)</button>
+            <button class="dg-tab-btn" data-tab="online" type="button">CONTA ONLINE (NUVEM)</button>
           </div>
 
           <!-- ABA 1: MEU PERFIL -->
@@ -750,7 +1034,7 @@
                 📸 ENVIAR MINHA FOTO
                 <input type="file" id="dg-avatar-file-input" accept="image/*" style="display:none;" />
               </label>
-              <div style="font-size:10px; color:#8a7f66;">Ou escolha um herói abaixo:</div>
+              <div style="font-size:10px; color:#8a7f66;">Ou escolha um herói clássico:</div>
               <div class="dg-hero-avatars" id="dg-hero-avatars-list">
                 ${Object.keys(HERO_AVATARS).map(k => `
                   <button type="button" class="dg-hero-btn ${this.profile.avatarHero === k && this.profile.avatarType === 'hero' ? 'selected' : ''}" data-hero="${k}" title="${HERO_AVATARS[k].name}">
@@ -762,38 +1046,48 @@
 
             <div class="dg-form-group">
               <label>NOME / APELIDO NO RANKING:</label>
-              <input type="text" class="dg-input" id="dg-input-username" value="${this.profile.username || ''}" maxlength="16" placeholder="Seu apelido..." />
+              <input type="text" class="dg-input" id="dg-input-username" value="${this.profile.username || ''}" maxlength="20" placeholder="Seu apelido..." />
             </div>
 
             <div style="font-size:10px; color:#8a7f66; margin-bottom:12px;">
-              Plataforma detectada: <strong style="color:#ffd24a;">${this.getPlatformLabel()}</strong>
+              Status da Conta: <strong style="color:#ffd24a;">${this.getPlatformLabel()}</strong>
+              ${this.profile.isRegistered ? ` · <span style="color:#8ae0b0;">Sincronizado na Nuvem</span>` : ` · <span style="color:#e08a7a;">Salvo apenas neste navegador</span>`}
             </div>
 
             <button type="button" class="dg-btn-primary" id="dg-btn-save-profile">SALVAR ALTERAÇÕES</button>
             <div class="dg-msg" id="dg-profile-msg"></div>
+
+            <div class="dg-hint-box" id="dg-profile-hint">
+              💡 <strong>Dica:</strong> Para manter seu apelido, foto e pontuações sincronizados ao jogar em outro computador ou dispositivo, acerte seu cadastro na aba <strong>CONTA ONLINE</strong>.
+            </div>
           </div>
 
-          <!-- ABA 2: CONTA SUPABASE -->
+          <!-- ABA 2: CONTA ONLINE -->
           <div class="dg-tab-content" id="dg-tab-online" style="display:none;">
             <div style="font-size:11px; color:#a89878; margin-bottom:16px; line-height:1.4;">
-              Vincule sua conta para sincronizar o perfil, foto e pontuações do ranking com o banco Supabase na nuvem.
+              Conecte sua conta para acessar seu perfil, foto e pontuações em qualquer computador, celular ou navegador.
             </div>
 
-            <div id="dg-auth-logged-view" style="${this.profile.email ? 'display:block;' : 'display:none;'}">
-              <div style="font-size:13px; color:#ffd24a; margin-bottom:8px;">
-                Conectado como: <strong id="dg-logged-email">${this.profile.email || ''}</strong>
+            <div id="dg-auth-logged-view" style="${this.profile.isRegistered ? 'display:block;' : 'display:none;'}">
+              <div style="background:rgba(20,40,25,0.7); border:1px solid #4a9e6b; border-radius:6px; padding:12px; margin-bottom:14px; text-align:center;">
+                <div style="font-size:13px; color:#8ae0b0; font-weight:bold; margin-bottom:4px;">
+                  ✓ CONTA CONECTADA NA NUVEM
+                </div>
+                <div style="font-size:12px; color:#e8d8b8;">
+                  Identificação: <strong id="dg-logged-email">${this.profile.email || this.profile.username || ''}</strong>
+                </div>
               </div>
               <button type="button" class="dg-btn-secondary" id="dg-btn-logout">DESCONECTAR DA CONTA</button>
             </div>
 
-            <div id="dg-auth-login-form" style="${this.profile.email ? 'display:none;' : 'display:block;'}">
+            <div id="dg-auth-login-form" style="${this.profile.isRegistered ? 'display:none;' : 'display:block;'}">
               <div class="dg-form-group">
-                <label>E-MAIL:</label>
-                <input type="email" class="dg-input" id="dg-input-email" placeholder="seu-email@exemplo.com" />
+                <label>E-MAIL OU NOME DE USUÁRIO:</label>
+                <input type="text" class="dg-input" id="dg-input-ident" placeholder="seu-usuario ou email@exemplo.com" />
               </div>
               <div class="dg-form-group">
                 <label>SENHA:</label>
-                <input type="password" class="dg-input" id="dg-input-password" placeholder="Sua senha secreta..." />
+                <input type="password" class="dg-input" id="dg-input-password" placeholder="Sua senha..." />
               </div>
 
               <button type="button" class="dg-btn-primary" id="dg-btn-login">ENTRAR NA CONTA</button>
@@ -801,6 +1095,10 @@
             </div>
 
             <div class="dg-msg" id="dg-auth-msg"></div>
+
+            <div class="dg-hint-box" style="margin-top:14px;">
+              ⚡ <strong>Multiplataforma:</strong> Se você joga em computadores diferentes, basta fazer login com a mesma conta para restaurar sua foto e dados instantaneamente.
+            </div>
           </div>
         </div>
       `;
@@ -814,13 +1112,11 @@
       const m = this.modalEl;
       if (!m) return;
 
-      // Fechar modal
       m.querySelector(".dg-modal-close").addEventListener("click", () => this.closeModal());
       m.addEventListener("click", (e) => {
         if (e.target === m) this.closeModal();
       });
 
-      // Alternar Abas
       const tabBtns = m.querySelectorAll(".dg-tab-btn");
       tabBtns.forEach(btn => {
         btn.addEventListener("click", () => {
@@ -843,15 +1139,14 @@
           preview.src = dataUrl;
           this.profile.avatarType = "custom";
           this.profile.avatarCustom = dataUrl;
-          // Desmarca heróis selecionados
           m.querySelectorAll(".dg-hero-btn").forEach(b => b.classList.remove("selected"));
-          this.showMsg("#dg-profile-msg", "Foto carregada com sucesso! Clique em Salvar.", "success");
+          this.showMsg("#dg-profile-msg", "Foto carregada! Clique em 'SALVAR ALTERAÇÕES' para confirmar.", "success");
         } catch (err) {
           this.showMsg("#dg-profile-msg", err.message, "error");
         }
       });
 
-      // Seleção de Avatar de Herói
+      // Seleção de Avatar
       const heroBtns = m.querySelectorAll(".dg-hero-btn");
       heroBtns.forEach(btn => {
         btn.addEventListener("click", () => {
@@ -865,59 +1160,62 @@
       });
 
       // Salvar Perfil
-      m.querySelector("#dg-btn-save-profile").addEventListener("click", () => {
-        const uname = m.querySelector("#dg-input-username").value.trim() || "Aventureiro";
+      m.querySelector("#dg-btn-save-profile").addEventListener("click", async () => {
+        const uname = (m.querySelector("#dg-input-username").value.trim() || "Aventureiro").slice(0, 20);
         this.saveProfile({
-          username: uname.slice(0, 16),
+          username: uname,
           avatarType: this.profile.avatarType,
           avatarHero: this.profile.avatarHero,
           avatarCustom: this.profile.avatarCustom
-        });
-        this.showMsg("#dg-profile-msg", "Perfil salvo com sucesso!", "success");
-        setTimeout(() => this.closeModal(), 600);
+        }, true);
+
+        if (this.profile.isRegistered) {
+          this.showMsg("#dg-profile-msg", "Perfil e foto atualizados e sincronizados na nuvem!", "success");
+        } else {
+          this.showMsg("#dg-profile-msg", "Perfil salvo localmente! Conecte na aba 'CONTA ONLINE' para salvar na nuvem.", "success");
+        }
+        setTimeout(() => this.closeModal(), 700);
       });
 
-      // Login Supabase
+      // Login
       m.querySelector("#dg-btn-login").addEventListener("click", async () => {
-        const email = m.querySelector("#dg-input-email").value.trim();
+        const ident = m.querySelector("#dg-input-ident").value.trim();
         const pass = m.querySelector("#dg-input-password").value.trim();
-        if (!email || !pass) {
-          return this.showMsg("#dg-auth-msg", "Preencha e-mail e senha.", "error");
+        if (!ident || !pass) {
+          return this.showMsg("#dg-auth-msg", "Preencha usuário/e-mail e senha para entrar.", "error");
         }
         try {
-          this.showMsg("#dg-auth-msg", "Entrando...", "success");
-          await this.loginWithSupabase(email, pass);
-          this.showMsg("#dg-auth-msg", "Login efetuado com sucesso!", "success");
-          this.refreshAuthViews();
+          this.showMsg("#dg-auth-msg", "Verificando credenciais na nuvem...", "success");
+          await this.login(ident, pass);
+          this.showMsg("#dg-auth-msg", "Login efetuado com sucesso! Perfil sincronizado.", "success");
+          this.updateModalFields();
+          setTimeout(() => this.closeModal(), 700);
         } catch (err) {
           this.showMsg("#dg-auth-msg", err.message, "error");
         }
       });
 
-      // Cadastro Supabase
+      // Cadastro
       m.querySelector("#dg-btn-register").addEventListener("click", async () => {
-        const email = m.querySelector("#dg-input-email").value.trim();
+        const ident = m.querySelector("#dg-input-ident").value.trim();
         const pass = m.querySelector("#dg-input-password").value.trim();
         const uname = m.querySelector("#dg-input-username").value.trim() || "Aventureiro";
-        if (!email || !pass) {
-          return this.showMsg("#dg-auth-msg", "Preencha e-mail e senha para criar a conta.", "error");
+        if (!ident || !pass) {
+          return this.showMsg("#dg-auth-msg", "Preencha usuário/e-mail e senha para criar a conta.", "error");
         }
-        if (pass.length < 6) {
-          return this.showMsg("#dg-auth-msg", "A senha deve ter no mínimo 6 caracteres.", "error");
+        if (pass.length < 4) {
+          return this.showMsg("#dg-auth-msg", "A senha deve ter no mínimo 4 caracteres.", "error");
         }
         try {
-          this.showMsg("#dg-auth-msg", "Criando conta...", "success");
-          const res = await this.registerWithSupabase(email, pass, uname, {
+          this.showMsg("#dg-auth-msg", "Criando conta e salvando foto na nuvem...", "success");
+          await this.register(ident, pass, uname, {
             avatarType: this.profile.avatarType,
             avatarHero: this.profile.avatarHero,
             avatarCustom: this.profile.avatarCustom
           });
-          if (res.offlineNotice) {
-            this.showMsg("#dg-auth-msg", "Conta criada e salva localmente!", "success");
-          } else {
-            this.showMsg("#dg-auth-msg", "Conta criada com sucesso no Supabase!", "success");
-          }
-          this.refreshAuthViews();
+          this.showMsg("#dg-auth-msg", "Conta criada com sucesso! Seu perfil está salvo na nuvem.", "success");
+          this.updateModalFields();
+          setTimeout(() => this.closeModal(), 800);
         } catch (err) {
           this.showMsg("#dg-auth-msg", err.message, "error");
         }
@@ -926,8 +1224,8 @@
       // Logout
       m.querySelector("#dg-btn-logout").addEventListener("click", () => {
         this.logout();
-        this.refreshAuthViews();
-        this.showMsg("#dg-auth-msg", "Desconectado.", "success");
+        this.updateModalFields();
+        this.showMsg("#dg-auth-msg", "Conta desconectada com sucesso.", "success");
       });
     }
 
@@ -937,13 +1235,13 @@
       const loggedView = m.querySelector("#dg-auth-logged-view");
       const loginForm = m.querySelector("#dg-auth-login-form");
       const loggedEmail = m.querySelector("#dg-logged-email");
-      if (this.profile.email) {
-        loggedView.style.display = "block";
-        loginForm.style.display = "none";
-        loggedEmail.textContent = this.profile.email;
+      if (this.profile.isRegistered) {
+        if (loggedView) loggedView.style.display = "block";
+        if (loginForm) loginForm.style.display = "none";
+        if (loggedEmail) loggedEmail.textContent = this.profile.email || this.profile.username;
       } else {
-        loggedView.style.display = "none";
-        loginForm.style.display = "block";
+        if (loggedView) loggedView.style.display = "none";
+        if (loginForm) loginForm.style.display = "block";
       }
       this.updateBadge();
     }
@@ -958,19 +1256,14 @@
     openModal() {
       if (!this.modalEl) this.createModal();
       this.modalEl.classList.add("visible");
-      // Atualiza valores dos campos
-      const nameInp = this.modalEl.querySelector("#dg-input-username");
-      if (nameInp) nameInp.value = this.profile.username || "";
-      const preview = this.modalEl.querySelector("#dg-modal-avatar-preview");
-      if (preview) preview.src = this.getAvatarUrl();
-      this.refreshAuthViews();
+      this.updateModalFields();
+      this.syncFromCloud().catch(() => {});
     }
 
     closeModal() {
       if (this.modalEl) this.modalEl.classList.remove("visible");
     }
 
-    // Retorna o perfil atual do jogador
     getProfile() {
       return this.profile;
     }
