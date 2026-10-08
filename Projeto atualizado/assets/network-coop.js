@@ -133,50 +133,60 @@
     }
   }
 
-  async function supaPublish(pName, payload) {
-    try {
-      await supaDelete(pName);
-      const b64 = await compressToB64(payload);
-      const chunkSize = 70;
-      const rows = [];
-      const total = Math.ceil(b64.length / chunkSize);
-      for (let i = 0; i < b64.length; i += chunkSize) {
-        const part = b64.substring(i, i + chunkSize);
-        rows.push({
-          mode: "endless",
-          player_name: pName,
-          class_id: part.substring(0, 24) || "X",
-          seed: part.substring(24, 56) || null,
-          version: part.substring(56, 70) || null,
-          depth: Math.floor(i / chunkSize) + 1,
-          score: total,
-          elapsed_ms: 0
+  let _pubQueue = Promise.resolve();
+  function supaPublish(pName, payload) {
+    _pubQueue = _pubQueue.then(async () => {
+      try {
+        await supaDelete(pName);
+        const b64 = await compressToB64(payload);
+        const chunkSize = 70;
+        const rows = [];
+        const total = Math.ceil(b64.length / chunkSize);
+        for (let i = 0; i < b64.length; i += chunkSize) {
+          const part = b64.substring(i, i + chunkSize);
+          rows.push({
+            mode: "endless",
+            player_name: pName,
+            class_id: part.substring(0, 24) || "X",
+            seed: part.substring(24, 56) || null,
+            version: part.substring(56, 70) || null,
+            depth: Math.floor(i / chunkSize) + 1,
+            score: total,
+            elapsed_ms: 0
+          });
+        }
+        const res = await fetch(SUPA_URL, {
+          method: "POST",
+          headers: { ...SUPA_HEADERS, "Prefer": "return=minimal" },
+          body: JSON.stringify(rows)
         });
+        return res.ok;
+      } catch (e) {
+        return false;
       }
-      const res = await fetch(SUPA_URL, {
-        method: "POST",
-        headers: { ...SUPA_HEADERS, "Prefer": "return=minimal" },
-        body: JSON.stringify(rows)
-      });
-      return res.ok;
-    } catch (e) {
-      return false;
-    }
+    }).catch(() => false);
+    return _pubQueue;
   }
 
   async function supaFetch(pName) {
     try {
-      const res = await fetch(`${SUPA_URL}?player_name=eq.${pName}&order=depth.asc`, {
+      const res = await fetch(`${SUPA_URL}?player_name=eq.${pName}&order=id.desc&limit=15`, {
         headers: SUPA_HEADERS
       });
       if (!res.ok) return null;
       const rows = await res.json();
       if (!rows || rows.length === 0) return null;
+
       const total = rows[0].score;
-      if (rows.length < total) return null;
+      if (!total || rows.length < total) return null;
+
+      // Pega o lote mais recente de 'total' chunks e ordena por depth crescente
+      const batch = rows.slice(0, total);
+      batch.sort((a, b) => (a.depth || 0) - (b.depth || 0));
+
       let b64 = "";
       for (let i = 0; i < total; i++) {
-        const r = rows[i];
+        const r = batch[i];
         if (!r) return null;
         b64 += (r.class_id || "") + (r.seed || "") + (r.version || "");
       }
@@ -444,6 +454,7 @@
             const cloudAns = await supaFetch(ansKey);
             if (cloudAns && cloudAns.answer && !this._remoteDescriptionSet) {
               await this._setRemoteDescSafe(cloudAns.answer);
+              this.status = "connected";
               if (!this.guestDiscovered) {
                 this.guestDiscovered = true;
                 this.emit("guest:joined", { role: "client", roomCode: this.roomCode });
@@ -621,6 +632,7 @@
         }).catch(() => {})
       ]);
 
+      this.status = "connected";
       this._startGuestPolling();
       this.emit("joining", this.roomCode);
     }
@@ -745,6 +757,7 @@
 
         case "INIT_RUN":
           this.emit("net:init-run", msg);
+          this.emit("message", msg);
           break;
 
         case "INPUTS":
@@ -786,7 +799,7 @@
       }
       // 2. Se for mensagem de controle importante, envia também via Supabase Relay para garantia 100%
       if (payload && payload.t && this.roomCode) {
-        const ctrlTypes = ["GOTO_CLASS_SELECT", "COOP_HOVER", "COOP_READY", "INIT_RUN", "HELLO", "GUEST_SELECT_HERO"];
+        const ctrlTypes = ["GOTO_CLASS_SELECT", "COOP_READY", "INIT_RUN", "HELLO", "GUEST_SELECT_HERO"];
         if (ctrlTypes.includes(payload.t)) {
           const clean = getCleanTopicCode(this.roomCode);
           const channel = (this.role === "host") ? ("dg_m_h_" + clean) : ("dg_m_c_" + clean);
