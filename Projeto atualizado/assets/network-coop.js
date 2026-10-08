@@ -11,7 +11,16 @@
   const ICE_SERVERS = [
     { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] },
     { urls: ['stun:stun2.l.google.com:19302', 'stun:stun3.l.google.com:19302'] },
-    { urls: ['stun:stun.cloudflare.com:3478'] }
+    { urls: ['stun:stun.cloudflare.com:3478'] },
+    {
+      urls: [
+        'turn:openrelay.metered.ca:80',
+        'turn:openrelay.metered.ca:443',
+        'turn:openrelay.metered.ca:443?transport=tcp'
+      ],
+      username: 'openrelay',
+      credential: 'openrelay'
+    }
   ];
 
   // Configuração Supabase REST para troca de ofertas/respostas WebRTC
@@ -221,6 +230,10 @@
       this.customSignalBaseUrl = null;
       this.roomCreatedAt = 0;
       this.lastInitRun = null;
+      this.guestDiscovered = false;
+      this._lastMsgSeqOut = 0;
+      this._lastMsgSeqIn = 0;
+      this._processedMsgIds = new Set();
 
       // Buffers de entrada e estado
       this.clientInputs = {
@@ -347,13 +360,24 @@
       this._pendingCandidates = [];
       this.roomCode = normalizeCode(customCode || this.generateRoomCode());
       this.roomCreatedAt = Date.now();
+      this.guestDiscovered = false;
+      this._lastMsgSeqOut = 0;
+      this._lastMsgSeqIn = 0;
+      this._processedMsgIds.clear();
 
       const clean = getCleanTopicCode(this.roomCode);
       const offerKey = "dg_o_" + clean;
       const ansKey = "dg_a_" + clean;
+      const hostMsgKey = "dg_m_h_" + clean;
+      const guestMsgKey = "dg_m_c_" + clean;
 
       // Limpa registros anteriores desta sala
-      await Promise.allSettled([supaDelete(offerKey), supaDelete(ansKey)]);
+      await Promise.allSettled([
+        supaDelete(offerKey),
+        supaDelete(ansKey),
+        supaDelete(hostMsgKey),
+        supaDelete(guestMsgKey)
+      ]);
 
       this.pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
 
@@ -404,8 +428,11 @@
 
     _startHostPolling(offerKey, ansKey) {
       if (this.pollInterval) clearInterval(this.pollInterval);
+      const clean = getCleanTopicCode(this.roomCode);
+      const guestMsgKey = "dg_m_c_" + clean;
+
       this.pollInterval = setInterval(async () => {
-        if (this.status === "connected" || this.status === "disconnected") {
+        if (this.status === "disconnected") {
           clearInterval(this.pollInterval);
           this.pollInterval = null;
           return;
@@ -417,10 +444,16 @@
             const cloudAns = await supaFetch(ansKey);
             if (cloudAns && cloudAns.answer && !this._remoteDescriptionSet) {
               await this._setRemoteDescSafe(cloudAns.answer);
-              supaDelete(offerKey);
-              supaDelete(ansKey);
+              if (!this.guestDiscovered) {
+                this.guestDiscovered = true;
+                this.emit("guest:joined", { role: "client", roomCode: this.roomCode });
+                this.emit("connected", { role: "host", roomCode: this.roomCode });
+              }
+              supaDelete(offerKey).catch(() => {});
             }
-          } catch (e) {}
+          } catch (e) {
+            console.warn("[Net] Erro ao aplicar resposta do Guest:", e);
+          }
 
           // Fallback: servidor local
           if (!this._remoteDescriptionSet) {
@@ -430,6 +463,11 @@
                 const data = await res.json();
                 if (data.answer && !this._remoteDescriptionSet) {
                   await this._setRemoteDescSafe(data.answer);
+                  if (!this.guestDiscovered) {
+                    this.guestDiscovered = true;
+                    this.emit("guest:joined", { role: "client", roomCode: this.roomCode });
+                    this.emit("connected", { role: "host", roomCode: this.roomCode });
+                  }
                 }
                 if (data.candidates && data.candidates.length) {
                   for (const c of data.candidates) {
@@ -440,7 +478,25 @@
             } catch (e) {}
           }
         }
-      }, 500);
+
+        // 2. Escuta mensagens de controle enviadas pelo Guest via Supabase Relay
+        try {
+          const guestMsgData = await supaFetch(guestMsgKey);
+          if (guestMsgData && guestMsgData.msg) {
+            const mId = guestMsgData.seq || JSON.stringify(guestMsgData.msg);
+            if (!this._processedMsgIds.has(mId)) {
+              this._processedMsgIds.add(mId);
+              if (!this.guestDiscovered) {
+                this.guestDiscovered = true;
+                this.emit("guest:joined", { role: "client", roomCode: this.roomCode });
+                this.emit("connected", { role: "host", roomCode: this.roomCode });
+              }
+              this._handleMessage(guestMsgData.msg);
+            }
+          }
+        } catch (e) {}
+
+      }, 350);
     }
 
     /* =========================================================================
@@ -571,13 +627,29 @@
 
     _startGuestPolling() {
       if (this.pollInterval) clearInterval(this.pollInterval);
+      const clean = getCleanTopicCode(this.roomCode);
+      const hostMsgKey = "dg_m_h_" + clean;
+
       this.pollInterval = setInterval(async () => {
-        if (this.status === "connected" || this.status === "disconnected") {
+        if (this.status === "disconnected") {
           clearInterval(this.pollInterval);
           this.pollInterval = null;
           return;
         }
 
+        // 1. Escuta mensagens de controle enviadas pelo Host via Supabase Relay
+        try {
+          const hostMsgData = await supaFetch(hostMsgKey);
+          if (hostMsgData && hostMsgData.msg) {
+            const mId = hostMsgData.seq || JSON.stringify(hostMsgData.msg);
+            if (!this._processedMsgIds.has(mId)) {
+              this._processedMsgIds.add(mId);
+              this._handleMessage(hostMsgData.msg);
+            }
+          }
+        } catch (e) {}
+
+        // 2. Fallback: servidor local
         try {
           const res = await fetch(`${this.getSignalBaseUrl()}/poll/${this.roomCode}?role=guest`);
           if (res.ok) {
@@ -589,7 +661,7 @@
             }
           }
         } catch (e) {}
-      }, 500);
+      }, 350);
     }
 
     /* =========================================================================
@@ -703,11 +775,24 @@
     }
 
     send(data) {
+      const payload = typeof data === "string" ? JSON.parse(data) : data;
+      // 1. Envia via DataChannel WebRTC se aberto
       if (this.dc && this.dc.readyState === "open") {
         try {
           this.dc.send(typeof data === "string" ? data : JSON.stringify(data));
         } catch (e) {
-          console.warn("[Net] Falha ao enviar pacote:", e);
+          console.warn("[Net] Falha ao enviar pacote via DataChannel:", e);
+        }
+      }
+      // 2. Se for mensagem de controle importante, envia também via Supabase Relay para garantia 100%
+      if (payload && payload.t && this.roomCode) {
+        const ctrlTypes = ["GOTO_CLASS_SELECT", "COOP_HOVER", "COOP_READY", "INIT_RUN", "HELLO", "GUEST_SELECT_HERO"];
+        if (ctrlTypes.includes(payload.t)) {
+          const clean = getCleanTopicCode(this.roomCode);
+          const channel = (this.role === "host") ? ("dg_m_h_" + clean) : ("dg_m_c_" + clean);
+          const seq = Date.now() + "_" + (++this._lastMsgSeqOut);
+          this._processedMsgIds.add(seq);
+          supaPublish(channel, { msg: payload, seq, ts: Date.now() }).catch(() => {});
         }
       }
     }
@@ -739,6 +824,11 @@
     disconnect() {
       if (this.pollInterval) { clearInterval(this.pollInterval); this.pollInterval = null; }
       if (this.pingInterval) { clearInterval(this.pingInterval); this.pingInterval = null; }
+      if (this.roomCode) {
+        const clean = getCleanTopicCode(this.roomCode);
+        supaDelete("dg_m_h_" + clean).catch(() => {});
+        supaDelete("dg_m_c_" + clean).catch(() => {});
+      }
       if (this.dc) {
         try { this.dc.close(); } catch (e) {}
         this.dc = null;
@@ -756,6 +846,10 @@
       this.customSignalBaseUrl = null;
       this.roomCreatedAt = 0;
       this.lastInitRun = null;
+      this.guestDiscovered = false;
+      this._lastMsgSeqOut = 0;
+      this._lastMsgSeqIn = 0;
+      this._processedMsgIds.clear();
     }
   }
 

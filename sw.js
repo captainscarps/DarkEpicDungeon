@@ -1,5 +1,5 @@
 // DEPTHGATE — service worker com rede prioritária para scripts e html:
-const CACHE = "ded-web-v2.0.9-coop-full-class-select";
+const CACHE = "ded-web-v2.0.10-coop-signaling-relay";
 
 self.addEventListener("install", () => self.skipWaiting());
 

@@ -524,7 +524,10 @@ $o.prototype.showOnlineCoopLobby = function() {
         this.cameras.main.once("camerafadeoutcomplete", () => this.scene.start("ClassSelect"));
       };
 
+      let guestAlreadyShown = false;
       const onGuest = () => {
+        if (guestAlreadyShown) return;
+        guestAlreadyShown = true;
         statusText.setText("✦ JOGADOR 2 CONECTADO! ✦\nClique para aceitar e abrir a selecao de herois.").setColor("#85e89d");
         this.game.audioEngine?.sfx?.("sfx-class-select");
 
