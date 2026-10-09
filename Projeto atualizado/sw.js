@@ -1,5 +1,5 @@
 // DEPTHGATE — service worker com rede prioritária para scripts e html:
-const CACHE = "ded-web-v4.2.0-fix-black-screen-freeze";
+const CACHE = "ded-web-v4.4.0-unitary-skeletons-clean-menu";
 
 self.addEventListener("install", () => self.skipWaiting());
 
