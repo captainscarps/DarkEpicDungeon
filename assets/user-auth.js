@@ -1000,7 +1000,8 @@
     }
 
     showBadge() {
-      if (this.badgeEl) this.badgeEl.style.display = "flex";
+      // Oculto a pedido do usuario
+      if (this.badgeEl) this.badgeEl.style.display = "none";
     }
 
     startSceneWatcher() {
@@ -1015,7 +1016,7 @@
           if (keys.some(k => ["Game", "Hub", "Traversal", "Cutscene", "VisualPrototype"].includes(k))) {
             this.hideBadge();
           } else if (keys.includes("MainMenu")) {
-            this.showBadge();
+            /* this.showBadge(); */
           }
         } catch (e) {}
       }, 200);
