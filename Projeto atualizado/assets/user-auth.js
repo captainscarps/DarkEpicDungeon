@@ -13,6 +13,7 @@
   // Chaves de armazenamento local
   const STORAGE_PROFILE_KEY = "depthgate:user_profile";
   const STORAGE_SESSION_KEY = "depthgate:auth_session";
+  const STORAGE_ACCOUNTS_KEY = "depthgate:user_accounts";
 
   // Avatares clássicos dos heróis em SVG vetorial de alta definição com moldura dourada
   const HERO_AVATARS = {
@@ -200,6 +201,35 @@
       } catch (e) {}
     }
 
+    loadAccounts() {
+      try {
+        const raw = localStorage.getItem(STORAGE_ACCOUNTS_KEY);
+        if (raw) return JSON.parse(raw);
+      } catch (e) {}
+      return {};
+    }
+
+    saveAccountRecord(account) {
+      try {
+        const accs = this.loadAccounts();
+        const key = (account.id || account.email || account.username || "").toLowerCase();
+        accs[key] = { ...account, updated_at: new Date().toISOString() };
+        if (account.username) {
+          accs[account.username.toLowerCase()] = accs[key];
+        }
+        if (account.email) {
+          accs[account.email.toLowerCase()] = accs[key];
+        }
+        localStorage.setItem(STORAGE_ACCOUNTS_KEY, JSON.stringify(accs));
+      } catch (e) {}
+    }
+
+    findLocalAccount(identifier) {
+      const accs = this.loadAccounts();
+      const id = identifier.trim().toLowerCase();
+      return accs[id] || null;
+    }
+
     applyPlatformDefaults() {
       if (this.platform === "steam") {
         let steamName = "Jogador Steam";
@@ -282,20 +312,31 @@
       return this._profilesTableStatus;
     }
 
-    // Cadastro unificado: salva na nuvem (profiles table e/ou Supabase Auth)
+    // Cadastro unificado: salva localmente e sincroniza na nuvem (profiles table e/ou Supabase Auth)
     async register(identifier, password, username, avatarData) {
       const cfg = getSupaConfig();
       const id = identifier.trim().toLowerCase();
       const uname = (username || "Aventureiro").trim().slice(0, 24);
       const isTableAvailable = await this.checkProfilesTable();
+      const pwdHash = await hashPassword(password);
+
+      // 1. Sempre salva no registro de contas local para NUNCA bloquear o jogador
+      this.saveAccountRecord({
+        id: id,
+        username: uname,
+        email: identifier.includes("@") ? identifier.trim() : null,
+        avatar_type: avatarData.avatarType || "hero",
+        avatar_hero: avatarData.avatarHero || "warrior",
+        avatar_custom: avatarData.avatarCustom || null,
+        platform: this.platform,
+        password_hash: pwdHash
+      });
 
       let registeredOnCloud = false;
-      let cloudErrorMsg = null;
 
-      // 1. Tenta salvar na tabela 'profiles' do banco de dados (sem limite de e-mail)
+      // 2. Tenta salvar na tabela 'profiles' do banco Supabase se estiver disponível
       if (isTableAvailable) {
         try {
-          // Verifica se id já existe
           const checkRes = await fetch(`${cfg.url}/rest/v1/profiles?id=eq.${encodeURIComponent(id)}&select=id`, {
             headers: getSupaHeaders()
           });
@@ -304,7 +345,6 @@
             throw new Error("Este e-mail ou nome de usuário já está cadastrado. Faça login na conta existente.");
           }
 
-          const pwdHash = await hashPassword(password);
           const row = {
             id: id,
             username: uname,
@@ -323,80 +363,61 @@
             body: JSON.stringify(row)
           });
 
-          if (!insRes.ok) {
-            const errJson = await insRes.json().catch(() => ({}));
-            throw new Error(errJson.message || "Erro ao salvar perfil no banco de dados.");
+          if (insRes.ok) {
+            registeredOnCloud = true;
+            this.saveSession({
+              provider: "profiles_table",
+              id: id,
+              username: uname,
+              email: row.email,
+              hash: pwdHash
+            });
           }
-
-          registeredOnCloud = true;
-          this.saveSession({
-            provider: "profiles_table",
-            id: id,
-            username: uname,
-            email: row.email,
-            hash: pwdHash
-          });
         } catch (err) {
-          cloudErrorMsg = err.message;
           if (err.message.includes("já está cadastrado")) throw err;
         }
       }
 
-      // 2. Tenta também Supabase Auth (caso o projeto use auth padrão ou confirmação desligada)
-      let authSession = null;
-      try {
-        const authEmail = identifier.includes("@") ? identifier.trim() : `${encodeURIComponent(id)}@depthgate.local`;
-        const authRes = await fetch(`${cfg.url}/auth/v1/signup`, {
-          method: "POST",
-          headers: getSupaHeaders(),
-          body: JSON.stringify({
-            email: authEmail,
-            password: password,
-            data: {
-              username: uname,
-              avatar_type: avatarData.avatarType,
-              avatar_hero: avatarData.avatarHero,
-              avatar_custom: avatarData.avatarCustom,
-              platform: this.platform
+      // 3. Fallback GoTrue Auth (se for e-mail válido com @)
+      if (!registeredOnCloud && identifier.includes("@")) {
+        try {
+          const authRes = await fetch(`${cfg.url}/auth/v1/signup`, {
+            method: "POST",
+            headers: getSupaHeaders(),
+            body: JSON.stringify({
+              email: identifier.trim(),
+              password: password,
+              data: {
+                username: uname,
+                avatar_type: avatarData.avatarType,
+                avatar_hero: avatarData.avatarHero,
+                avatar_custom: avatarData.avatarCustom,
+                platform: this.platform
+              }
+            })
+          });
+          if (authRes.ok) {
+            const authData = await authRes.json();
+            if (authData.access_token) {
+              this.saveSession(authData);
+              registeredOnCloud = true;
             }
-          })
+          }
+        } catch (e) {}
+      }
+
+      // 4. Salva sessão local ativa
+      if (!this.session) {
+        this.saveSession({
+          provider: registeredOnCloud ? "cloud" : "local_storage",
+          id: id,
+          username: uname,
+          email: identifier.includes("@") ? identifier.trim() : null,
+          hash: pwdHash
         });
-
-        if (authRes.ok) {
-          const authData = await authRes.json();
-          if (authData.access_token) {
-            authSession = authData;
-            this.saveSession(authData);
-            registeredOnCloud = true;
-          }
-        } else {
-          const authErr = await authRes.json().catch(() => ({}));
-          const errMsg = authErr.msg || authErr.error_description || authErr.message || "";
-          if (errMsg.includes("rate limit") || errMsg.includes("over_email_send_rate_limit")) {
-            // Limite de e-mails do Supabase
-            if (!registeredOnCloud) {
-              throw new Error(
-                "O Supabase atingiu o limite de envio de e-mails (3 e-mails/hora no plano gratuito). " +
-                "Para liberar o cadastro direto em múltiplos dispositivos sem limite: " +
-                "execute o script em 'supabase-ranking.sql' no SQL Editor do Supabase, ou desmarque 'Confirm email' em Authentication > Providers > Email no painel do Supabase."
-              );
-            }
-          }
-        }
-      } catch (authErr) {
-        if (!registeredOnCloud) throw authErr;
       }
 
-      // Se não conseguiu salvar na nuvem por nenhuma das vias
-      if (!registeredOnCloud) {
-        const detail = cloudErrorMsg ? ` (${cloudErrorMsg})` : "";
-        throw new Error(
-          "Não foi possível salvar a conta na nuvem" + detail + ". " +
-          "Certifique-se de executar o script 'supabase-ranking.sql' no menu SQL Editor do Supabase para criar a tabela de perfis."
-        );
-      }
-
-      // Salva dados locais do perfil
+      // 5. Salva dados locais do perfil
       this.saveProfile({
         username: uname,
         email: identifier.includes("@") ? identifier.trim() : id,
@@ -406,18 +427,23 @@
         isRegistered: true
       });
 
-      return { success: true };
+      return {
+        success: true,
+        cloud: registeredOnCloud,
+        message: registeredOnCloud
+          ? "Conta criada com sucesso e sincronizada na nuvem!"
+          : "Conta criada e salva neste navegador! (Para sincronizar entre múltiplos PCs, execute o script SQL no Supabase)."
+      };
     }
 
-    // Login unificado: pesquisa na nuvem e restaura perfil e foto
+    // Login unificado: pesquisa na nuvem e no armazenamento local
     async login(identifier, password) {
       const cfg = getSupaConfig();
       const id = identifier.trim().toLowerCase();
+      const pwdHash = await hashPassword(password);
       const isTableAvailable = await this.checkProfilesTable();
 
-      let loginSuccess = false;
-
-      // 1. Tenta autenticação pela tabela 'profiles' do banco
+      // 1. Tenta autenticação pela tabela 'profiles' do banco Supabase
       if (isTableAvailable) {
         try {
           const query = `${cfg.url}/rest/v1/profiles?or=(id.eq.${encodeURIComponent(id)},username.ilike.${encodeURIComponent(id)})&limit=1`;
@@ -426,7 +452,6 @@
             const rows = await res.json();
             if (Array.isArray(rows) && rows.length > 0) {
               const row = rows[0];
-              const pwdHash = await hashPassword(password);
               if (row.password_hash === pwdHash) {
                 this.saveSession({
                   provider: "profiles_table",
@@ -434,6 +459,16 @@
                   username: row.username,
                   email: row.email || identifier,
                   hash: pwdHash
+                });
+                this.saveAccountRecord({
+                  id: row.id,
+                  username: row.username,
+                  email: row.email || identifier,
+                  password_hash: pwdHash,
+                  avatar_type: row.avatar_type || "hero",
+                  avatar_hero: row.avatar_hero || "warrior",
+                  avatar_custom: row.avatar_custom || null,
+                  platform: this.platform
                 });
                 this.saveProfile({
                   username: row.username,
@@ -443,8 +478,7 @@
                   avatarCustom: row.avatar_custom || null,
                   isRegistered: true
                 });
-                loginSuccess = true;
-                return { success: true, profile: row };
+                return { success: true, profile: row, cloud: true };
               } else {
                 throw new Error("Senha incorreta para esta conta.");
               }
@@ -455,46 +489,59 @@
         }
       }
 
-      // 2. Tenta login pelo Supabase GoTrue Auth
-      try {
-        const authEmail = identifier.includes("@") ? identifier.trim() : `${encodeURIComponent(id)}@depthgate.local`;
-        const endpoint = `${cfg.url}/auth/v1/token?grant_type=password`;
-        const res = await fetch(endpoint, {
-          method: "POST",
-          headers: getSupaHeaders(),
-          body: JSON.stringify({ email: authEmail, password: password })
-        });
-
-        const data = await res.json();
-        if (res.ok && data.access_token) {
-          this.saveSession(data);
-          const uMeta = data.user?.user_metadata || {};
+      // 2. Se a nuvem não tiver ou estiver sem tabela, pesquisa no registro local de contas
+      const localAcc = this.findLocalAccount(identifier);
+      if (localAcc) {
+        if (localAcc.password_hash === pwdHash) {
+          this.saveSession({
+            provider: "local_storage",
+            id: localAcc.id || id,
+            username: localAcc.username,
+            email: localAcc.email || identifier,
+            hash: pwdHash
+          });
           this.saveProfile({
-            username: uMeta.username || this.profile.username,
-            email: identifier.includes("@") ? identifier.trim() : id,
-            avatarType: uMeta.avatar_type || this.profile.avatarType,
-            avatarHero: uMeta.avatar_hero || this.profile.avatarHero,
-            avatarCustom: uMeta.avatar_custom || this.profile.avatarCustom,
+            username: localAcc.username,
+            email: localAcc.email || localAcc.id || identifier,
+            avatarType: localAcc.avatar_type || "hero",
+            avatarHero: localAcc.avatar_hero || "warrior",
+            avatarCustom: localAcc.avatar_custom || null,
             isRegistered: true
           });
-          loginSuccess = true;
-          return { success: true, user: data.user };
+          return { success: true, profile: localAcc, cloud: false };
         } else {
-          const msg = data.error_description || data.msg || data.message || "";
-          if (msg.includes("Email not confirmed")) {
-            throw new Error("E-mail não confirmado no Supabase. Desative a opção 'Confirm email' no painel Supabase para permitir login direto.");
-          }
+          throw new Error("Senha incorreta para esta conta.");
         }
-      } catch (authErr) {
-        if (loginSuccess) return { success: true };
-        throw new Error(authErr.message || "E-mail/usuário ou senha incorretos.");
       }
 
-      if (!loginSuccess) {
-        throw new Error("Conta não encontrada. Verifique o usuário/e-mail ou crie uma nova conta.");
+      // 3. Tenta Supabase GoTrue Auth (se for e-mail)
+      if (identifier.includes("@")) {
+        try {
+          const endpoint = `${cfg.url}/auth/v1/token?grant_type=password`;
+          const res = await fetch(endpoint, {
+            method: "POST",
+            headers: getSupaHeaders(),
+            body: JSON.stringify({ email: identifier.trim(), password: password })
+          });
+          const data = await res.json();
+          if (res.ok && data.access_token) {
+            this.saveSession(data);
+            const uMeta = data.user?.user_metadata || {};
+            this.saveProfile({
+              username: uMeta.username || this.profile.username,
+              email: identifier.trim(),
+              avatarType: uMeta.avatar_type || this.profile.avatarType,
+              avatarHero: uMeta.avatar_hero || this.profile.avatarHero,
+              avatarCustom: uMeta.avatar_custom || this.profile.avatarCustom,
+              isRegistered: true
+            });
+            return { success: true, user: data.user, cloud: true };
+          }
+        } catch (e) {}
       }
+
+      throw new Error("Conta não encontrada. Verifique o usuário ou clique em 'CRIAR NOVA CONTA'.");
     }
-
     // Sincroniza alterações do perfil local com a nuvem
     async syncProfileToCloud() {
       if (!this.profile.isRegistered) return;
@@ -1186,10 +1233,11 @@
         }
         try {
           this.showMsg("#dg-auth-msg", "Verificando credenciais na nuvem...", "success");
-          await this.login(ident, pass);
-          this.showMsg("#dg-auth-msg", "Login efetuado com sucesso! Perfil sincronizado.", "success");
+          const res = await this.login(ident, pass);
+          const msg = res.cloud ? "Login efetuado com sucesso! Sincronizado na nuvem." : "Login efetuado com sucesso (modo local)!";
+          this.showMsg("#dg-auth-msg", msg, "success");
           this.updateModalFields();
-          setTimeout(() => this.closeModal(), 700);
+          setTimeout(() => this.closeModal(), 900);
         } catch (err) {
           this.showMsg("#dg-auth-msg", err.message, "error");
         }
@@ -1208,14 +1256,14 @@
         }
         try {
           this.showMsg("#dg-auth-msg", "Criando conta e salvando foto na nuvem...", "success");
-          await this.register(ident, pass, uname, {
+          const res = await this.register(ident, pass, uname, {
             avatarType: this.profile.avatarType,
             avatarHero: this.profile.avatarHero,
             avatarCustom: this.profile.avatarCustom
           });
-          this.showMsg("#dg-auth-msg", "Conta criada com sucesso! Seu perfil está salvo na nuvem.", "success");
+          this.showMsg("#dg-auth-msg", res.message || "Conta criada com sucesso!", "success");
           this.updateModalFields();
-          setTimeout(() => this.closeModal(), 800);
+          setTimeout(() => this.closeModal(), 1200);
         } catch (err) {
           this.showMsg("#dg-auth-msg", err.message, "error");
         }
