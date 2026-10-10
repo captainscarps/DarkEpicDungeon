@@ -36,32 +36,33 @@
    "fps": 10,
    "loop": true,
    "source": [
-    "recorte#0",
-    "recorte#1",
-    "recorte#2",
-    "recorte#3",
-    "recorte#4",
-    "recorte#5",
-    "recorte#6",
-    "recorte#7"
+    "walk#0",
+    "walk#1",
+    "walk#2",
+    "walk#3",
+    "walk#4",
+    "walk#5",
+    "walk#6",
+    "walk#7"
    ]
   },
   "run": {
-   "frames": 6,
+   "frames": 7,
    "file": "pirate_run.png",
    "size": [
-    768,
+    896,
     128
    ],
-   "fps": 14,
+   "fps": 12,
    "loop": true,
    "source": [
-    "recorte#0",
-    "recorte#1",
-    "recorte#2",
-    "recorte#3",
-    "recorte#4",
-    "recorte#5"
+    "run#0",
+    "run#1",
+    "run#2",
+    "run#3",
+    "run#4",
+    "run#5",
+    "run#6"
    ]
   },
   "attack": {
@@ -106,7 +107,7 @@
    ]
   }
  },
- "gameSheet": "assets/pixel-art/characters/pirate-hd6-body.png",
+ "gameSheet": "assets/pixel-art/characters/pirate-hd7-body.png",
  "map": {
   "idle": [
    0,
@@ -139,51 +140,52 @@
    18,
    19,
    20,
-   21
+   21,
+   22
   ],
   "attackW": [
-   22,
    23,
-   24
+   24,
+   25
   ],
   "attackH": [
-   25,
-   26
+   26,
+   27
   ],
   "attackR": [
-   27,
    28,
    29,
-   30
+   30,
+   31
   ],
-  "windupA": 23,
-  "windup": 24,
-  "hitA": 25,
-  "hit": 26,
-  "recovery": 29,
-  "guardStart": 22,
-  "guard": 22,
-  "hurt": 31,
-  "hurtB": 32,
-  "stunA": 32,
-  "stunB": 33,
+  "windupA": 24,
+  "windup": 25,
+  "hitA": 26,
+  "hit": 27,
+  "recovery": 30,
+  "guardStart": 23,
+  "guard": 23,
+  "hurt": 32,
+  "hurtB": 33,
+  "stunA": 33,
+  "stunB": 34,
   "dashA": 16,
-  "dash": 17,
-  "castA": 23,
-  "cast": 28,
-  "castC": 29,
+  "dash": 19,
+  "castA": 24,
+  "cast": 29,
+  "castC": 30,
   "deathSeq": [
-   31,
    32,
    33,
    34,
    35,
    36,
    37,
-   38
+   38,
+   39
   ],
-  "deathA": 31,
-  "deathB": 34,
-  "deathC": 38
+  "deathA": 32,
+  "deathB": 35,
+  "deathC": 39
  }
 }
