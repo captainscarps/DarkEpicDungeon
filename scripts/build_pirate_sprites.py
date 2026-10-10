@@ -88,8 +88,11 @@ SCALE = {k: STAND_H / 177 for k in ("idle", "walk", "run", "atk", "death")}
 # (a corrida sobe e desce de verdade); "feet" encosta cada quadro no chão (a queda).
 ANIMS = {
     "idle":   dict(src=[("idle", i) for i in range(8)], v="row", h="torso", fps=6, loop=True),
-    "walk":   dict(src=[("walk", i) for i in range(8)], v="row", h="torso", fps=10, loop=True),
-    "run":    dict(src=[("run", i) for i in range(7)], v="row", h="torso", fps=13, loop=True),
+    # andando: a folha v2 tem sempre a mesma perna na frente e o sabre aparece só nos quadros
+    # 1 e 6; o ciclo alterna "pé no chão" (0, 5, 7) e "pé de trás erguido" (3), sem o sabre piscar
+    "walk":   dict(src=[("walk", i) for i in (0, 3, 5, 3, 7, 3)], v="row", h="torso", fps=9, loop=True),
+    # correndo: alterna pernas abertas (0, 5, 6) e cruzando (3, 4); 1 e 2 ficam de fora (sem o sabre)
+    "run":    dict(src=[("run", i) for i in (0, 3, 5, 4, 6, 3)], v="row", h="torso", fps=12, loop=True),
     "attack": dict(src=[("atk", i) for i in range(9)], v="row", h="torso", fps=13, loop=False),
     "death":  dict(src=[("death", i) for i in range(8)], v="feet", h="bbox", fps=9, loop=False),
 }
@@ -193,7 +196,7 @@ amap = {
     "windupA": I("attack", 1), "windup": I("attack", 2), "hitA": I("attack", 3), "hit": I("attack", 4), "recovery": I("attack", 7),
     "guardStart": I("attack", 0), "guard": I("attack", 0),
     "hurt": I("death", 0), "hurtB": I("death", 1), "stunA": I("death", 1), "stunB": I("death", 2),
-    "dashA": I("run", 1), "dash": I("run", 3),
+    "dashA": I("run", 0), "dash": I("run", 1),
     "castA": I("attack", 1), "cast": I("attack", 6), "castC": I("attack", 7),
     "deathSeq": [I("death", k) for k in range(cnt("death"))],
     "deathA": I("death", 0), "deathB": I("death", 3), "deathC": I("death", cnt("death") - 1),
@@ -210,7 +213,7 @@ layout = {"frameW": FW, "frameH": FH, "scale": GAME_SCALE, "hiRes": True, "footY
           "portrait": portrait, "fps": {k: ANIMS[k]["fps"] for k in ANIMS if ANIMS[k]["fps"]} | {"idlevar": 3},
           "anchors": [[80, 76]] * n, "torso": [[64, 80]] * n, "head": [[64, top + 12]] * n, "map": amap}
 
-KEY = "pirate-hd4"           # nome novo a cada mudança grande: o cache offline do jogo não serve a versão velha
+KEY = "pirate-hd5"           # nome novo a cada mudança grande: o cache offline do jogo não serve a versão velha
 png = cv2.imencode(".png", cv2.cvtColor(sheet, cv2.COLOR_RGBA2BGRA))[1].tobytes()
 for d in OUT_DIRS:
     if not os.path.isdir(os.path.dirname(d)):
@@ -219,8 +222,8 @@ for d in OUT_DIRS:
     for name in [f"{KEY}-body.png"] + [f"{KEY}-t{t}-body.png" for t in range(5)]:
         open(os.path.join(d, name), "wb").write(png)
     json.dump(layout, open(os.path.join(d, f"{KEY}.json"), "w"), separators=(",", ":"))
-    for old in [f"pirate-{k}{e}" for k in ("pack", "hd", "hd2", "hd3") for e in ("-body.png", ".json")] + \
-               [f"pirate-{k}-t{t}-body.png" for k in ("pack", "hd", "hd2", "hd3") for t in range(5)]:
+    for old in [f"pirate-{k}{e}" for k in ("pack", "hd", "hd2", "hd3", "hd4") for e in ("-body.png", ".json")] + \
+               [f"pirate-{k}-t{t}-body.png" for k in ("pack", "hd", "hd2", "hd3", "hd4") for t in range(5)]:
         if os.path.exists(os.path.join(d, old)):
             os.remove(os.path.join(d, old))
 json.dump({"cell": [FW, FH], "scale": GAME_SCALE, "footY": FOOT,

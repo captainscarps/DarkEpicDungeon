@@ -27,42 +27,39 @@
    ]
   },
   "walk": {
-   "frames": 8,
+   "frames": 6,
    "file": "pirate_walk.png",
    "size": [
-    1024,
+    768,
     128
    ],
-   "fps": 10,
+   "fps": 9,
    "loop": true,
    "source": [
     "walk#0",
-    "walk#1",
-    "walk#2",
     "walk#3",
-    "walk#4",
     "walk#5",
-    "walk#6",
-    "walk#7"
+    "walk#3",
+    "walk#7",
+    "walk#3"
    ]
   },
   "run": {
-   "frames": 7,
+   "frames": 6,
    "file": "pirate_run.png",
    "size": [
-    896,
+    768,
     128
    ],
-   "fps": 13,
+   "fps": 12,
    "loop": true,
    "source": [
     "run#0",
-    "run#1",
-    "run#2",
     "run#3",
-    "run#4",
     "run#5",
-    "run#6"
+    "run#4",
+    "run#6",
+    "run#3"
    ]
   },
   "attack": {
@@ -107,7 +104,7 @@
    ]
   }
  },
- "gameSheet": "assets/pixel-art/characters/pirate-hd4-body.png",
+ "gameSheet": "assets/pixel-art/characters/pirate-hd5-body.png",
  "map": {
   "idle": [
    0,
@@ -130,62 +127,59 @@
    10,
    11,
    12,
-   13,
-   14,
-   15
+   13
   ],
   "run": [
+   14,
+   15,
    16,
    17,
    18,
-   19,
+   19
+  ],
+  "attackW": [
    20,
    21,
    22
   ],
-  "attackW": [
-   23,
-   24,
-   25
-  ],
   "attackH": [
-   26,
-   27
+   23,
+   24
   ],
   "attackR": [
-   28,
+   25,
+   26,
+   27,
+   28
+  ],
+  "windupA": 21,
+  "windup": 22,
+  "hitA": 23,
+  "hit": 24,
+  "recovery": 27,
+  "guardStart": 20,
+  "guard": 20,
+  "hurt": 29,
+  "hurtB": 30,
+  "stunA": 30,
+  "stunB": 31,
+  "dashA": 14,
+  "dash": 15,
+  "castA": 21,
+  "cast": 26,
+  "castC": 27,
+  "deathSeq": [
    29,
    30,
-   31
-  ],
-  "windupA": 24,
-  "windup": 25,
-  "hitA": 26,
-  "hit": 27,
-  "recovery": 30,
-  "guardStart": 23,
-  "guard": 23,
-  "hurt": 32,
-  "hurtB": 33,
-  "stunA": 33,
-  "stunB": 34,
-  "dashA": 17,
-  "dash": 19,
-  "castA": 24,
-  "cast": 29,
-  "castC": 30,
-  "deathSeq": [
+   31,
    32,
    33,
    34,
    35,
-   36,
-   37,
-   38,
-   39
+   36
   ],
-  "deathA": 32,
-  "deathB": 35,
-  "deathC": 39
+  "deathA": 29,
+  "deathB": 32,
+  "deathC": 36
  }
 }

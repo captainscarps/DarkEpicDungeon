@@ -7,8 +7,8 @@ Cada animação fica em um PNG próprio. É uma tira horizontal de células de *
 | Arquivo | Quadros | Tamanho | Velocidade | Repete |
 |---|---|---|---|---|
 | `pirate_idle.png` | 8 | 1024×128 | 6 fps | sim |
-| `pirate_walk.png` | 8 | 1024×128 | 10 fps | sim |
-| `pirate_run.png` | 7 | 896×128 | 13 fps | sim |
+| `pirate_walk.png` | 6 | 768×128 | 9 fps | sim |
+| `pirate_run.png` | 6 | 768×128 | 12 fps | sim |
 | `pirate_attack.png` | 9 | 1152×128 | pelo tempo da arma (680 ms) | não |
 | `pirate_death.png` | 8 | 1024×128 | 9 fps | não, fica no último |
 
@@ -18,7 +18,7 @@ O `pirate_config.json` traz os mesmos dados em formato de máquina: quadros, fps
 
 O jogo não cria um sistema novo de animação. Ele usa o mesmo formato "pack" dos outros heróis:
 
-- `scripts/build_pirate_sprites.py` gera as tiras acima e as junta na folha que o jogo carrega, `assets/pixel-art/characters/pirate-hd4-body.png` (40 células) com `pirate-hd4.json`. No JSON ficam o mapa de estados e as velocidades (`fps`).
+- `scripts/build_pirate_sprites.py` gera as tiras acima e as junta na folha que o jogo carrega, `assets/pixel-art/characters/pirate-hd5-body.png` (37 células) com `pirate-hd5.json`. No JSON ficam o mapa de estados e as velocidades (`fps`).
 - **Parado, andando e correndo** viram animações em loop (`mk4b-pirate-idle`, `-walk`, `-run`). Para ele correr, o direcional precisa estar inclinado acima de 62%, a mesma regra do jogo para todos os heróis. No teclado ele sempre corre.
 - **Ataque:** a imagem acompanha as fases da arma, e o dano sai no fim da preparação, no tempo do jogo:
   - preparação (320 ms): quadros 0 (postura), 1 (prepara) e 2 (recua o sabre);
@@ -34,4 +34,9 @@ O jogo não cria um sistema novo de animação. Ele usa o mesmo formato "pack" d
 
 1. Edite a folha de origem, ou troque a origem na tabela `ANIMS` do script.
 2. Rode `python scripts/build_pirate_sprites.py`.
-3. Se mudar a folha do jogo, troque o nome (`KEY` no script e o `"hd4"` no `scripts/patch_pirate_class.py`). Sem isso, o cache offline do navegador continua mostrando a versão antiga.
+3. Se mudar a folha do jogo, troque o nome (`KEY` no script e o `"hd5"` no `scripts/patch_pirate_class.py`). Sem isso, o cache offline do navegador continua mostrando a versão antiga.
+
+## Andando e correndo: ciclos montados a partir da folha
+
+- **Correndo** (folha CORRENDO 0, 3, 5, 4, 6, 3): alterna pernas abertas e pernas cruzando. Os quadros 1 e 2 ficam de fora porque o sabre some neles.
+- **Andando** (folha ANDANDO 0, 3, 5, 3, 7, 3): na folha v2, é sempre a mesma perna que fica na frente, e só o quadro 3 mostra o pé de trás erguido sem o sabre piscar (o 6 também levanta o pé, mas o sabre aparece). Por isso o ciclo alterna "pé no chão" e "pé erguido". Para uma caminhada completa, a folha precisaria de 8 quadros com as pernas trocando de posição: contato com a perna direita na frente, apoio, passagem, impulso, e o mesmo com a esquerda. O sabre deve aparecer na mão em todos.
