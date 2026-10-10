@@ -1,6 +1,6 @@
 """Gera os sprites de efeito das habilidades do Capitão Scarpa.
 
-  pirate-anchor.png    — âncora gigante da Fúria Pirata (1 quadro, 34x44)
+  pirate-anchor.png    — âncora gigante da Fúria Pirata (1 quadro, 48x76, escala 0.5 no jogo)
   pirate-tentacle.png  — tentáculo fantasmagórico da Ira do Kraken
                          (6 quadros de 40x64: brota, sobe, enrola, golpeia, afunda)
 
@@ -35,31 +35,78 @@ def save(img, name):
 
 
 # ------------------------------------------------------------------ âncora
-W, H = 34, 44
-anc = Image.new("RGBA", (W, H))
-d = ImageDraw.Draw(anc)
-IRON_D, IRON, IRON_L, IRON_H = (44, 46, 54, 255), (78, 82, 94, 255), (120, 126, 138, 255), (176, 182, 192, 255)
-RUST = (122, 62, 30, 255)
-cx = W // 2
-d.ellipse((cx - 4, 1, cx + 4, 9), outline=IRON, width=2)              # argola
-d.point((cx - 2, 3), IRON_H)
-d.rectangle((cx - 12, 10, cx + 12, 12), fill=IRON)                    # cepo
-d.line((cx - 12, 10, cx + 12, 10), fill=IRON_L)
-d.rectangle((cx - 13, 9, cx - 11, 13), fill=IRON_D)
-d.rectangle((cx + 11, 9, cx + 13, 13), fill=IRON_D)
-d.rectangle((cx - 2, 9, cx + 2, 36), fill=IRON)                       # haste
-d.line((cx - 1, 9, cx - 1, 36), fill=IRON_L)
-d.line((cx - 2, 14, cx - 2, 34), fill=IRON_H)
-d.line((cx + 2, 9, cx + 2, 36), fill=IRON_D)
-d.arc((cx - 15, 18, cx + 15, 42), 20, 160, fill=IRON, width=4)        # braços
-d.arc((cx - 15, 18, cx + 15, 42), 30, 150, fill=IRON_L, width=1)
-d.polygon([(cx - 16, 27), (cx - 11, 33), (cx - 17, 35)], fill=IRON)   # unhas
-d.polygon([(cx + 16, 27), (cx + 11, 33), (cx + 17, 35)], fill=IRON)
-d.line((cx - 16, 27, cx - 17, 35), fill=IRON_L)
-d.line((cx + 16, 27, cx + 17, 35), fill=IRON_D)
-for p in [(cx + 1, 20), (cx - 1, 27), (cx + 9, 38), (cx - 7, 39), (cx + 4, 12)]:
-    d.point(p, RUST)
-save(outline(anc), "pirate-anchor.png")
+# Desenhada em alta resolução (48x76, o jogo usa escala 0.5 → ~24x38 na tela do mundo),
+# com volume de metal: forma desenhada 4x maior, iluminação pela normal da forma
+# (luz do alto-esquerda), ferrugem, corda enrolada na haste e contorno escuro.
+def build_anchor():
+    SS = 4
+    AW, AH = 48, 76
+    W4, H4 = AW * SS, AH * SS
+    cx = W4 / 2
+    m = Image.new("L", (W4, H4), 0)
+    d = ImageDraw.Draw(m)
+    u = SS
+    # argola
+    d.ellipse((cx - 7 * u, 1 * u, cx + 7 * u, 15 * u), outline=255, width=int(3.2 * u))
+    # cepo (barra transversal) com pontas arredondadas
+    d.rounded_rectangle((cx - 20 * u, 15 * u, cx + 20 * u, 20 * u), radius=2 * u, fill=255)
+    d.ellipse((cx - 23 * u, 14 * u, cx - 17 * u, 21 * u), fill=255)
+    d.ellipse((cx + 17 * u, 14 * u, cx + 23 * u, 21 * u), fill=255)
+    # haste (afina para baixo)
+    d.polygon([(cx - 4.2 * u, 12 * u), (cx + 4.2 * u, 12 * u), (cx + 3.4 * u, 62 * u), (cx - 3.4 * u, 62 * u)], fill=255)
+    # coroa + braços curvos
+    d.arc((cx - 21 * u, 30 * u, cx + 21 * u, 70 * u), 15, 165, fill=255, width=int(5.5 * u))
+    d.ellipse((cx - 6 * u, 57 * u, cx + 6 * u, 70 * u), fill=255)
+    # unhas (pás) nas pontas dos braços
+    for sgn in (-1, 1):
+        x0 = cx + sgn * 20 * u
+        d.polygon([(x0 - sgn * 1 * u, 44 * u), (x0 + sgn * 4.5 * u, 40 * u), (x0 + sgn * 3 * u, 52 * u),
+                   (x0 - sgn * 4 * u, 55 * u)], fill=255)
+        d.polygon([(x0 + sgn * 4.5 * u, 40 * u), (x0 + sgn * 6.5 * u, 35 * u), (x0 + sgn * 3 * u, 44 * u)], fill=255)
+    mask = np.array(m).astype(np.float32) / 255
+
+    # volume: normal aproximada pelo gradiente da forma borrada
+    hgt = ndi.gaussian_filter(ndi.distance_transform_edt(mask > .5).astype(np.float32), 2.0)
+    gy, gx = np.gradient(hgt)
+    nz = np.full_like(gx, 1.6)
+    n = np.sqrt(gx ** 2 + gy ** 2 + nz ** 2)
+    L = np.array([-0.55, -0.6, 0.58])
+    lit = (-gx * L[0] - gy * L[1] + nz * L[2]) / n                 # 0..1
+    lit = np.clip(lit, 0, 1)
+    spec = np.clip((lit - 0.82) / 0.18, 0, 1) ** 2
+    ramp = np.array([[22, 24, 30], [44, 47, 56], [72, 77, 88], [108, 114, 126], [156, 162, 174]], np.float32)
+    t = lit * (len(ramp) - 1)
+    i0 = np.clip(t.astype(int), 0, len(ramp) - 2)
+    f = (t - i0)[..., None]
+    col = ramp[i0] * (1 - f) + ramp[i0 + 1] * f
+    col = col + spec[..., None] * 60
+    # ferrugem em manchas (ruído suave)
+    rng = np.random.default_rng(7)
+    noise = ndi.gaussian_filter(rng.random((H4, W4)).astype(np.float32), 6)
+    noise = (noise - noise.min()) / (noise.max() - noise.min())
+    rust = np.clip((noise - 0.56) / 0.2, 0, 1)[..., None] * 0.75
+    rust_col = np.array([118, 62, 30], np.float32) * (0.6 + 0.5 * lit[..., None])
+    col = col * (1 - rust) + rust_col * rust
+    rgba = np.zeros((H4, W4, 4), np.float32)
+    rgba[..., :3] = col
+    rgba[..., 3] = mask * 255
+    img = Image.fromarray(np.clip(rgba, 0, 255).astype(np.uint8), "RGBA")
+
+    # corda enrolada na haste (por cima do metal)
+    dr = ImageDraw.Draw(img)
+    for k in range(5):
+        y = (24 + k * 6.2) * u
+        dr.line([(cx - 5 * u, y + 2.5 * u), (cx + 5 * u, y - 1.5 * u)], fill=(112, 84, 50, 255), width=int(2.2 * u))
+        dr.line([(cx - 5 * u, y + 1.6 * u), (cx + 5 * u, y - 2.4 * u)], fill=(156, 122, 78, 255), width=int(0.9 * u))
+    dr.line([(cx + 5 * u, 22 * u), (cx + 9 * u, 30 * u), (cx + 7 * u, 36 * u)], fill=(112, 84, 50, 255), width=int(2 * u))
+
+    small = img.resize((AW, AH), Image.LANCZOS)
+    a = np.array(small)
+    a[..., 3] = np.where(a[..., 3] > 110, 255, 0)
+    return outline(Image.fromarray(a), (12, 10, 14, 255))
+
+
+save(build_anchor(), "pirate-anchor2.png")  # nome novo: o cache offline guardava a âncora antiga
 
 # ------------------------------------------------------------------ tentáculo
 FW, FH, NF = 40, 64, 6

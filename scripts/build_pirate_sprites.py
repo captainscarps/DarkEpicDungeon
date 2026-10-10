@@ -86,7 +86,7 @@ F = [
     ("idle", 4), ("idle", 6),                                            # 4-5 idlevar
     ("walk", 0), ("walk", 1), ("walk", 2), ("walk", 3), ("walk", 4), ("walk", 5),  # 6-11 walk
     ("run", 0), ("run", 1), ("run", 2), ("run", 3), ("run", 4), ("run", 5),        # 12-17 run
-    ("atk", 4), ("atk", 1), ("atk", 3), ("atk", 2), ("atk", 10),         # 18 windupA 19 windup 20 hitA 21 hit 22 recovery
+    ("atk", 0), ("atk", 1), ("atk", 3), ("atk", 2), ("atk", 10),         # 18 windupA 19 windup 20 hitA 21 hit 22 recovery (sem o quadro de costas)
     ("atk", 0), ("atk", 0),                                              # 23 guardStart 24 guard
     ("death", 0), ("atk", 9),                                            # 25 hurt 26 hurtB
     ("death", 1), ("death", 2),                                          # 27 stunA 28 stunB
@@ -137,6 +137,27 @@ for i, (c, m) in enumerate(frames):
     tile[ty[ok], tx[ok], 3] = 255
     sheet[:, i * FW:(i + 1) * FW] = tile
 
+# alinhamento fino: o tronco de cada quadro de parado/andando/correndo fica na mesma
+# coluna do primeiro quadro da animação (sem isso ele "treme" 1-2 px para os lados)
+def _feat(t):
+    a = t[..., 3] / 255.0
+    g = (t[..., :3].mean(2) / 255.0 * a).astype(np.float32)
+    ys = np.nonzero(a.sum(1))[0]
+    m = np.zeros_like(g)
+    m[ys.min():int(ys.min() + (ys.max() - ys.min()) * 0.5)] = 1
+    return g * m
+
+
+_win = cv2.createHanningWindow((FW, FW), cv2.CV_32F)
+for grp in [range(0, 6), range(6, 12), range(12, 18)]:
+    base = _feat(sheet[:, grp[0] * FW:(grp[0] + 1) * FW].astype(np.float32))
+    for i in list(grp)[1:]:
+        tile = sheet[:, i * FW:(i + 1) * FW]
+        (dx, _dy), _r = cv2.phaseCorrelate(base, _feat(tile.astype(np.float32)), _win)
+        sx = -int(round(dx))
+        if sx and abs(sx) <= 4:
+            sheet[:, i * FW:(i + 1) * FW] = np.roll(tile, sx, axis=1)
+
 # retrato do HUD: quadrado centrado no rosto do quadro 0
 t0 = sheet[:, :FW, 3] > 0
 ys, xs = np.nonzero(t0)
@@ -156,13 +177,13 @@ for d in OUT_DIRS:
         continue
     os.makedirs(d, exist_ok=True)
     # nome "hd" (e não "pack") para o cache offline do jogo não servir a versão antiga
-    for name in ["pirate-hd-body.png"] + [f"pirate-hd-t{t}-body.png" for t in range(5)]:
+    for name in ["pirate-hd2-body.png"] + [f"pirate-hd2-t{t}-body.png" for t in range(5)]:
         open(os.path.join(d, name), "wb").write(png)
-    json.dump(layout, open(os.path.join(d, "pirate-hd.json"), "w"), separators=(",", ":"))
-    for old in ["pirate-pack-body.png", "pirate-pack.json"] + [f"pirate-pack-t{t}-body.png" for t in range(5)]:
+    json.dump(layout, open(os.path.join(d, "pirate-hd2.json"), "w"), separators=(",", ":"))
+    for old in [f"pirate-{k}{e}" for k in ("pack", "hd") for e in ("-body.png", ".json")] + [f"pirate-{k}-t{t}-body.png" for k in ("pack", "hd") for t in range(5)]:
         if os.path.exists(os.path.join(d, old)):
             os.remove(os.path.join(d, old))
-print("OK pirate-hd-body.png", sheet.shape, len(png), "bytes; retrato", portrait)
+print("OK pirate-hd2-body.png", sheet.shape, len(png), "bytes; retrato", portrait)
 
 if PREVIEW:  # prévia ampliada 2x de todos os quadros, em 3 linhas
     per = 13
