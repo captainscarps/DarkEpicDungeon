@@ -1,0 +1,12 @@
+const fs = require('fs');
+const c = fs.readFileSync('assets/index-D6qIWtA7-p209.js', 'utf8');
+let p = c.indexOf('"EAGLE_COMPANION", "ELEMENTAL_NOVA"');
+console.log(c.substring(p - 500, p + 1100));
+p = c.indexOf('ESPIRITO_GAVIAO:{');
+console.log('\n----\n' + c.substring(p - 1500, p + 200));
+p = c.indexOf('class __Eagle');
+console.log('\n---- EAGLE ----\n' + c.substring(p, p + 1800));
+p = c.indexOf('rollDamage(i){');
+console.log('\n---- rollDamage ----\n' + c.substring(p, p + 400));
+p = c.indexOf('addBuff(');
+console.log('\n---- addBuff ----\n' + c.substring(p - 50, p + 400));
