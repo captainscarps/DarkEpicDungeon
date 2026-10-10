@@ -1,8 +1,11 @@
 """Constrói a spritesheet do Capitão Scarpa (classe PIRATE) no formato "pack" do jogo.
 
 Entrada : scripts/source/capitao-scarpa-folha.png  (folha com fundo marrom esfumaçado)
-Saída   : assets/pixel-art/characters/pirate-pack*.png + pirate-pack.json
-          (39 quadros de 128x128, mesmo mapa de animações do berserker-pack.json)
+Saída   : assets/sprites/characters/pirate/pirate_{idle,walk,run,attack,death,extra}.png
+          (uma tira horizontal por animação, células 128x128, fundo transparente)
+          + pirate_config.json (quadros, fps, origem de cada quadro)
+          assets/pixel-art/characters/pirate-hd3*.png + pirate-hd3.json
+          (folha "pack" que o jogo carrega = as tiras acima em sequência + mapa)
 
 Fidelidade à arte enviada:
 - o personagem fica com ~98 px de altura no quadro e o jogo o desenha com
@@ -78,23 +81,24 @@ figs = {k: sorted([f for f in big if a <= (f["y0"] + f["y1"]) / 2 < b], key=lamb
 # a folha desenhou a linha "parado" um pouco maior e a linha "morrendo" um pouco menor
 SCALE = {"idle": STAND_H / 182, "walk": STAND_H / 164, "run": STAND_H / 164, "atk": STAND_H / 164, "death": STAND_H / 148}
 
-# ---------------------------------------------------------------- mapa de quadros
-# (linha, índice da figura na linha) na ordem do berserker-pack.json.
-# Linha "parado": 0-4, 6, 7 e 9 de lado; 5 três-quartos de costas; 8 de costas.
-F = [
-    ("idle", 0), ("idle", 1), ("idle", 2), ("idle", 3),                  # 0-3 idle
-    ("idle", 4), ("idle", 6),                                            # 4-5 idlevar
-    ("walk", 0), ("walk", 1), ("walk", 2), ("walk", 3), ("walk", 4), ("walk", 5),  # 6-11 walk
-    ("run", 0), ("run", 1), ("run", 2), ("run", 3), ("run", 4), ("run", 5),        # 12-17 run
-    ("atk", 0), ("atk", 1), ("atk", 3), ("atk", 2), ("atk", 10),         # 18 windupA 19 windup 20 hitA 21 hit 22 recovery (sem o quadro de costas)
-    ("atk", 0), ("atk", 0),                                              # 23 guardStart 24 guard
-    ("death", 0), ("atk", 9),                                            # 25 hurt 26 hurtB
-    ("death", 1), ("death", 2),                                          # 27 stunA 28 stunB
-    ("run", 0), ("run", 5),                                              # 29 dashA 30 dash
-    ("atk", 1), ("atk", 5), ("atk", 2),                                  # 31 castA 32 cast 33 castC
-    ("death", 3), ("death", 5), ("death", 8),                            # 34-36 death
-    ("idle", 8), ("idle", 8),                                            # 37-38 upA/upB: parado olhando para cima (de costas)
-]
+# ---------------------------------------------------------------- animações
+# Cada animação usa só quadros de lado da folha enviada (os de costas e três-quartos
+# ficam de fora). Linha "parado": 0-4, 6, 7, 9 de lado; 5 três-quartos; 8 costas.
+# Linha "andando": 0-6 de lado. Linha "correndo": 0-5 de lado. Linha "atacando":
+# com o sabre visto de lado só 1, 2 e 3 (0 = guarda, 5 = soco sem sabre, 9 = postura).
+# vertical: "row" mantém a altura relativa ao chão da própria linha (a corrida sobe e
+# desce de verdade); "feet" encosta cada quadro no chão (a queda e o corpo deitado).
+ANIMS = {
+    "idle":   dict(src=[("idle", i) for i in (0, 1, 2, 3, 4, 9)], v="row", h="torso", fps=5, loop=True),
+    "walk":   dict(src=[("walk", i) for i in range(7)], v="row", h="torso", fps=10, loop=True),
+    "run":    dict(src=[("run", i) for i in range(6)], v="row", h="torso", fps=14, loop=True),
+    "attack": dict(src=[("atk", 0), ("atk", 1), ("atk", 3), ("atk", 2)], v="row", h="torso", fps=12, loop=False),
+    "death":  dict(src=[("death", i) for i in range(9)], v="feet", h="bbox", fps=9, loop=False),
+    # poses de apoio usadas por habilidades e estados (não é uma animação própria)
+    "extra":  dict(src=[("idle", 6), ("idle", 7), ("idle", 8), ("atk", 5), ("atk", 9)], v="feet", h="torso", fps=0, loop=False),
+}
+ORDER = ["idle", "walk", "run", "attack", "death", "extra"]
+STRIP_DIR = os.path.join(ROOT, "assets", "sprites", "characters", "pirate")
 
 
 def shrink(f, s):
@@ -111,34 +115,6 @@ def shrink(f, s):
     return np.clip(c, 0, 1), a
 
 
-frames = []
-for row, idx in F:
-    c, a = shrink(figs[row][idx], SCALE[row])
-    # nitidez leve só para compensar o borrão da redução (cores preservadas)
-    blur = cv2.GaussianBlur(c, (0, 0), 0.7)
-    c = np.clip(c + (c - blur) * 0.45, 0, 1)
-    frames.append((c, a > 0.5))
-
-sheet = np.zeros((FH, FW * len(F), 4), np.uint8)
-for i, (c, m) in enumerate(frames):
-    q = (c * 255).round().astype(np.uint8)
-    ys, xs = np.nonzero(m)
-    # âncora horizontal: centro do tronco (metade de cima da figura) — o sabre não desloca o corpo
-    top = ys < (ys.min() + ys.max()) / 2
-    cx = xs[top].mean() if top.any() else xs.mean()
-    offx, offy = int(round(64 - cx)), FOOT - ys.max()
-    tx, ty = xs + offx, ys + offy
-    ok = (tx >= 0) & (tx < FW) & (ty >= 0) & (ty < FH)
-    lost = int((~ok).sum())
-    if lost:
-        print(f"aviso: quadro {i} perdeu {lost} px fora do quadro")
-    tile = np.zeros((FH, FW, 4), np.uint8)
-    tile[ty[ok], tx[ok], :3] = q[ys[ok], xs[ok]]
-    tile[ty[ok], tx[ok], 3] = 255
-    sheet[:, i * FW:(i + 1) * FW] = tile
-
-# alinhamento fino: o tronco de cada quadro de parado/andando/correndo fica na mesma
-# coluna do primeiro quadro da animação (sem isso ele "treme" 1-2 px para os lados)
 def _feat(t):
     a = t[..., 3] / 255.0
     g = (t[..., :3].mean(2) / 255.0 * a).astype(np.float32)
@@ -149,46 +125,130 @@ def _feat(t):
 
 
 _win = cv2.createHanningWindow((FW, FW), cv2.CV_32F)
-for grp in [range(0, 6), range(6, 12), range(12, 18)]:
-    base = _feat(sheet[:, grp[0] * FW:(grp[0] + 1) * FW].astype(np.float32))
-    for i in list(grp)[1:]:
-        tile = sheet[:, i * FW:(i + 1) * FW]
-        (dx, _dy), _r = cv2.phaseCorrelate(base, _feat(tile.astype(np.float32)), _win)
-        sx = -int(round(dx))
-        if sx and abs(sx) <= 4:
-            sheet[:, i * FW:(i + 1) * FW] = np.roll(tile, sx, axis=1)
 
-# retrato do HUD: quadrado centrado no rosto do quadro 0
-t0 = sheet[:, :FW, 3] > 0
-ys, xs = np.nonzero(t0)
+
+def build_strip(name, spec):
+    figs_ = [figs[r][i] for r, i in spec["src"]]
+    ground = {}
+    for (r, _), f in zip(spec["src"], figs_):
+        ground[r] = max(ground.get(r, 0), f["y1"])
+    strip = np.zeros((FH, FW * len(figs_), 4), np.uint8)
+    for k, ((row, _), f) in enumerate(zip(spec["src"], figs_)):
+        sc = SCALE[row]
+        c, a = shrink(f, sc)
+        blur = cv2.GaussianBlur(c, (0, 0), 0.7)                     # nitidez leve (cores preservadas)
+        c = np.clip(c + (c - blur) * 0.45, 0, 1)
+        m = a > 0.5
+        q = (c * 255).round().astype(np.uint8)
+        ys, xs = np.nonzero(m)
+        if spec["h"] == "torso":                                    # centro do tronco: o sabre não desloca o corpo
+            top = ys < (ys.min() + ys.max()) / 2
+            cx = xs[top].mean() if top.any() else xs.mean()
+        else:                                                       # centro da figura (corpo deitado cabe inteiro)
+            cx = (xs.min() + xs.max()) / 2
+        lift = round((ground[row] - f["y1"]) * sc) if spec["v"] == "row" else 0
+        offx, offy = int(round(64 - cx)), FOOT - lift - ys.max()
+        tx, ty = xs + offx, ys + offy
+        ok = (tx >= 0) & (tx < FW) & (ty >= 0) & (ty < FH)
+        if (~ok).any():
+            raise SystemExit(f"{name} quadro {k}: {int((~ok).sum())} px fora da célula")
+        tile = np.zeros((FH, FW, 4), np.uint8)
+        tile[ty, tx, :3] = q[ys, xs]
+        tile[ty, tx, 3] = 255
+        strip[:, k * FW:(k + 1) * FW] = tile
+    if spec["loop"]:                                                # alinhamento fino do tronco (sem tremer)
+        base = _feat(strip[:, :FW].astype(np.float32))
+        for k in range(1, len(figs_)):
+            tile = strip[:, k * FW:(k + 1) * FW]
+            (dx, _), _ = cv2.phaseCorrelate(base, _feat(tile.astype(np.float32)), _win)
+            sx = -int(round(dx))
+            if sx and abs(sx) <= 4 and not tile[:, :abs(sx)].any() and not tile[:, -abs(sx):].any():
+                strip[:, k * FW:(k + 1) * FW] = np.roll(tile, sx, axis=1)
+    return strip
+
+
+def write_png(path, arr):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    open(path, "wb").write(cv2.imencode(".png", cv2.cvtColor(arr, cv2.COLOR_RGBA2BGRA))[1].tobytes())
+
+
+strips, start = {}, {}
+n = 0
+for name in ORDER:
+    strips[name] = build_strip(name, ANIMS[name])
+    start[name] = n
+    n += strips[name].shape[1] // FW
+    write_png(os.path.join(STRIP_DIR, f"pirate_{name}.png"), strips[name])
+    print(f"pirate_{name}.png", strips[name].shape[1] // FW, "quadros", f"{strips[name].shape[1]}x{FH}")
+
+# folha do jogo = as animações em sequência (o formato "pack" que o jogo já usa)
+sheet = np.concatenate([strips[k] for k in ORDER], axis=1)
+I = lambda name, k=0: start[name] + k
+cnt = lambda name: strips[name].shape[1] // FW
+E = {"idlevarA": I("extra", 0), "idlevarB": I("extra", 1), "back": I("extra", 2), "punch": I("extra", 3), "stance": I("extra", 4)}
+amap = {
+    "idle": [I("idle", k) for k in range(cnt("idle"))],
+    "idlevar": [E["idlevarA"], E["idlevarB"], E["idlevarA"]],
+    "walk": [I("walk", k) for k in range(cnt("walk"))],
+    "run": [I("run", k) for k in range(cnt("run"))],
+    # ataque em 3 fases controladas pelo tempo da arma (o dano sai no fim da preparação)
+    "attackW": [I("attack", 0), I("attack", 1)], "attackH": [I("attack", 2)], "attackR": [I("attack", 3), E["stance"]],
+    "windupA": I("attack", 0), "windup": I("attack", 1), "hitA": I("attack", 2), "hit": I("attack", 2), "recovery": I("attack", 3),
+    "guardStart": I("attack", 0), "guard": I("attack", 0),
+    "hurt": I("death", 0), "hurtB": I("death", 1), "stunA": I("death", 1), "stunB": I("death", 2),
+    "dashA": I("run", 0), "dash": I("run", 5),
+    "castA": I("attack", 1), "cast": E["punch"], "castC": I("attack", 3),
+    "deathSeq": [I("death", k) for k in range(cnt("death"))],
+    "deathA": I("death", 0), "deathB": I("death", 4), "deathC": I("death", cnt("death") - 1),
+    "upA": E["back"], "upB": E["back"],
+}
+
+# retrato do HUD: quadrado centrado no rosto do primeiro quadro parado
+ys, xs = np.nonzero(sheet[:, :FW, 3] > 0)
 top = int(ys.min())
-head = ys < top + 22
-fx = int(round(xs[head].mean()))
+fx = int(round(xs[ys < top + 22].mean()))
 P = 30
 portrait = [fx - P // 2 + 1, max(0, top - 1), P, P]
 
-layout = json.load(open(os.path.join(OUT_DIRS[0], "berserker-pack.json"), encoding="utf-8"))
-layout.update(scale=GAME_SCALE, hiRes=True, footY=FOOT, bakedWeapon=True, portrait=portrait,
-              anchors=[[80, 76]] * len(F), torso=[[64, 80]] * len(F), head=[[64, top + 12]] * len(F))
+layout = {"frameW": FW, "frameH": FH, "scale": GAME_SCALE, "hiRes": True, "footY": FOOT, "bakedWeapon": True,
+          "portrait": portrait, "fps": {k: ANIMS[k]["fps"] for k in ANIMS if ANIMS[k]["fps"]} | {"idlevar": 3},
+          "anchors": [[80, 76]] * n, "torso": [[64, 80]] * n, "head": [[64, top + 12]] * n, "map": amap}
 
+KEY = "pirate-hd3"           # nome novo a cada mudança grande: o cache offline do jogo não serve a versão velha
 png = cv2.imencode(".png", cv2.cvtColor(sheet, cv2.COLOR_RGBA2BGRA))[1].tobytes()
 for d in OUT_DIRS:
     if not os.path.isdir(os.path.dirname(d)):
         continue
     os.makedirs(d, exist_ok=True)
-    # nome "hd" (e não "pack") para o cache offline do jogo não servir a versão antiga
-    for name in ["pirate-hd2-body.png"] + [f"pirate-hd2-t{t}-body.png" for t in range(5)]:
+    for name in [f"{KEY}-body.png"] + [f"{KEY}-t{t}-body.png" for t in range(5)]:
         open(os.path.join(d, name), "wb").write(png)
-    json.dump(layout, open(os.path.join(d, "pirate-hd2.json"), "w"), separators=(",", ":"))
-    for old in [f"pirate-{k}{e}" for k in ("pack", "hd") for e in ("-body.png", ".json")] + [f"pirate-{k}-t{t}-body.png" for k in ("pack", "hd") for t in range(5)]:
+    json.dump(layout, open(os.path.join(d, f"{KEY}.json"), "w"), separators=(",", ":"))
+    for old in [f"pirate-{k}{e}" for k in ("pack", "hd", "hd2") for e in ("-body.png", ".json")] + \
+               [f"pirate-{k}-t{t}-body.png" for k in ("pack", "hd", "hd2") for t in range(5)]:
         if os.path.exists(os.path.join(d, old)):
             os.remove(os.path.join(d, old))
-print("OK pirate-hd2-body.png", sheet.shape, len(png), "bytes; retrato", portrait)
+json.dump({"cell": [FW, FH], "scale": GAME_SCALE, "footY": FOOT,
+           "animations": {k: {"frames": cnt(k), "file": f"pirate_{k}.png", "size": [cnt(k) * FW, FH],
+                              "fps": ANIMS[k]["fps"], "loop": ANIMS[k]["loop"],
+                              "source": [f"{r}#{i}" for r, i in ANIMS[k]["src"]]} for k in ORDER},
+           "gameSheet": f"assets/pixel-art/characters/{KEY}-body.png", "map": amap},
+          open(os.path.join(STRIP_DIR, "pirate_config.json"), "w", encoding="utf-8"), indent=1, ensure_ascii=False)
+print(f"OK {KEY}-body.png", sheet.shape, len(png), "bytes;", n, "quadros; retrato", portrait)
 
-if PREVIEW:  # prévia ampliada 2x de todos os quadros, em 3 linhas
-    per = 13
-    pv = np.concatenate([sheet[:, r * per * FW:(r + 1) * per * FW] for r in range(3)], 0)
+if PREVIEW:  # prévia: uma linha por animação, ampliada 2x
+    rows = []
+    wmax = max(v.shape[1] for v in strips.values())
+    for k in ORDER:
+        r = np.zeros((FH, wmax, 4), np.uint8)
+        r[:, :strips[k].shape[1]] = strips[k]
+        rows.append(r)
+    pv = np.concatenate(rows, 0)
     al = pv[..., 3:4] / 255.0
     out = (pv[..., :3] * al + np.array([38, 32, 36]) * (1 - al)).astype(np.uint8)
+    for k in range(len(ORDER) + 1):
+        out[k * FH - 1 if k else 0, :] = (90, 80, 70)
+    out[np.arange(len(ORDER) * FH), :][..., 0]
     out = cv2.resize(out, None, fx=2, fy=2, interpolation=cv2.INTER_NEAREST)
+    for k in range(len(ORDER)):                                     # linha do chão (footY)
+        out[(k * FH + FOOT) * 2 + 1, :, :] = (70, 110, 70)
     cv2.imwrite(PREVIEW, cv2.cvtColor(out, cv2.COLOR_RGB2BGR))

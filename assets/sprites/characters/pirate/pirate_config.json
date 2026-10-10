@@ -1,0 +1,195 @@
+{
+ "cell": [
+  128,
+  128
+ ],
+ "scale": 0.5,
+ "footY": 123,
+ "animations": {
+  "idle": {
+   "frames": 6,
+   "file": "pirate_idle.png",
+   "size": [
+    768,
+    128
+   ],
+   "fps": 5,
+   "loop": true,
+   "source": [
+    "idle#0",
+    "idle#1",
+    "idle#2",
+    "idle#3",
+    "idle#4",
+    "idle#9"
+   ]
+  },
+  "walk": {
+   "frames": 7,
+   "file": "pirate_walk.png",
+   "size": [
+    896,
+    128
+   ],
+   "fps": 10,
+   "loop": true,
+   "source": [
+    "walk#0",
+    "walk#1",
+    "walk#2",
+    "walk#3",
+    "walk#4",
+    "walk#5",
+    "walk#6"
+   ]
+  },
+  "run": {
+   "frames": 6,
+   "file": "pirate_run.png",
+   "size": [
+    768,
+    128
+   ],
+   "fps": 14,
+   "loop": true,
+   "source": [
+    "run#0",
+    "run#1",
+    "run#2",
+    "run#3",
+    "run#4",
+    "run#5"
+   ]
+  },
+  "attack": {
+   "frames": 4,
+   "file": "pirate_attack.png",
+   "size": [
+    512,
+    128
+   ],
+   "fps": 12,
+   "loop": false,
+   "source": [
+    "atk#0",
+    "atk#1",
+    "atk#3",
+    "atk#2"
+   ]
+  },
+  "death": {
+   "frames": 9,
+   "file": "pirate_death.png",
+   "size": [
+    1152,
+    128
+   ],
+   "fps": 9,
+   "loop": false,
+   "source": [
+    "death#0",
+    "death#1",
+    "death#2",
+    "death#3",
+    "death#4",
+    "death#5",
+    "death#6",
+    "death#7",
+    "death#8"
+   ]
+  },
+  "extra": {
+   "frames": 5,
+   "file": "pirate_extra.png",
+   "size": [
+    640,
+    128
+   ],
+   "fps": 0,
+   "loop": false,
+   "source": [
+    "idle#6",
+    "idle#7",
+    "idle#8",
+    "atk#5",
+    "atk#9"
+   ]
+  }
+ },
+ "gameSheet": "assets/pixel-art/characters/pirate-hd3-body.png",
+ "map": {
+  "idle": [
+   0,
+   1,
+   2,
+   3,
+   4,
+   5
+  ],
+  "idlevar": [
+   32,
+   33,
+   32
+  ],
+  "walk": [
+   6,
+   7,
+   8,
+   9,
+   10,
+   11,
+   12
+  ],
+  "run": [
+   13,
+   14,
+   15,
+   16,
+   17,
+   18
+  ],
+  "attackW": [
+   19,
+   20
+  ],
+  "attackH": [
+   21
+  ],
+  "attackR": [
+   22,
+   36
+  ],
+  "windupA": 19,
+  "windup": 20,
+  "hitA": 21,
+  "hit": 21,
+  "recovery": 22,
+  "guardStart": 19,
+  "guard": 19,
+  "hurt": 23,
+  "hurtB": 24,
+  "stunA": 24,
+  "stunB": 25,
+  "dashA": 13,
+  "dash": 18,
+  "castA": 20,
+  "cast": 35,
+  "castC": 22,
+  "deathSeq": [
+   23,
+   24,
+   25,
+   26,
+   27,
+   28,
+   29,
+   30,
+   31
+  ],
+  "deathA": 23,
+  "deathB": 27,
+  "deathC": 31,
+  "upA": 34,
+  "upB": 34
+ }
+}

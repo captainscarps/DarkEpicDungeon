@@ -1,4 +1,4 @@
-const CACHE = "ded-web-v4.12.0-impacto-ancora";
+const CACHE = "ded-web-v4.13.0-pirata-animacoes";
 
 self.addEventListener("install", () => self.skipWaiting());
 
