@@ -172,12 +172,26 @@ def write_png(path, arr):
 
 
 strips, start = {}, {}
-n = 0
 for name in ORDER:
     strips[name] = build_strip(name, ANIMS[name])
+    write_png(os.path.join(STRIP_DIR, f"pirate_{name}.png"), strips[name])
+
+# Andar e correr: a folha não tem a outra metade do passo (a mesma perna fica sempre à
+# frente), então as pernas são animadas por recorte a partir da postura parada
+# (scripts/build_pirate_legs.py): cada perna gira no quadril, alternando, e levanta o pé.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import build_pirate_legs  # noqa: E402
+build_pirate_legs.main()
+for name in ("walk", "run"):
+    rgba = cv2.imread(os.path.join(STRIP_DIR, f"pirate_{name}.png"), cv2.IMREAD_UNCHANGED)
+    strips[name] = cv2.cvtColor(rgba, cv2.COLOR_BGRA2RGBA)
+    ANIMS[name]["src"] = [("recorte", k) for k in range(strips[name].shape[1] // FW)]
+ANIMS["walk"]["fps"], ANIMS["run"]["fps"] = 10, 14
+
+n = 0
+for name in ORDER:
     start[name] = n
     n += strips[name].shape[1] // FW
-    write_png(os.path.join(STRIP_DIR, f"pirate_{name}.png"), strips[name])
     print(f"pirate_{name}.png", strips[name].shape[1] // FW, "quadros", f"{strips[name].shape[1]}x{FH}")
 
 # folha do jogo = as animações em sequência (o formato "pack" que o jogo já usa)
@@ -213,7 +227,7 @@ layout = {"frameW": FW, "frameH": FH, "scale": GAME_SCALE, "hiRes": True, "footY
           "portrait": portrait, "fps": {k: ANIMS[k]["fps"] for k in ANIMS if ANIMS[k]["fps"]} | {"idlevar": 3},
           "anchors": [[80, 76]] * n, "torso": [[64, 80]] * n, "head": [[64, top + 12]] * n, "map": amap}
 
-KEY = "pirate-hd5"           # nome novo a cada mudança grande: o cache offline do jogo não serve a versão velha
+KEY = "pirate-hd6"           # nome novo a cada mudança grande: o cache offline do jogo não serve a versão velha
 png = cv2.imencode(".png", cv2.cvtColor(sheet, cv2.COLOR_RGBA2BGRA))[1].tobytes()
 for d in OUT_DIRS:
     if not os.path.isdir(os.path.dirname(d)):
@@ -222,8 +236,8 @@ for d in OUT_DIRS:
     for name in [f"{KEY}-body.png"] + [f"{KEY}-t{t}-body.png" for t in range(5)]:
         open(os.path.join(d, name), "wb").write(png)
     json.dump(layout, open(os.path.join(d, f"{KEY}.json"), "w"), separators=(",", ":"))
-    for old in [f"pirate-{k}{e}" for k in ("pack", "hd", "hd2", "hd3", "hd4") for e in ("-body.png", ".json")] + \
-               [f"pirate-{k}-t{t}-body.png" for k in ("pack", "hd", "hd2", "hd3", "hd4") for t in range(5)]:
+    for old in [f"pirate-{k}{e}" for k in ("pack", "hd", "hd2", "hd3", "hd4", "hd5") for e in ("-body.png", ".json")] + \
+               [f"pirate-{k}-t{t}-body.png" for k in ("pack", "hd", "hd2", "hd3", "hd4", "hd5") for t in range(5)]:
         if os.path.exists(os.path.join(d, old)):
             os.remove(os.path.join(d, old))
 json.dump({"cell": [FW, FH], "scale": GAME_SCALE, "footY": FOOT,
