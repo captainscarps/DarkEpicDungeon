@@ -101,7 +101,7 @@ rep('t&&(this.container.setPosition(t.x,t.y-2),', 't&&(this.container.setPositio
 rep('deliverAttack(i,t,e=null){', 'deliverAttack(i,t,e=null){this.scene.__krakenUntil>this.scene.time.now&&this.scene.__krakenStrike?.();')
 
 # ------------------------------------------------------------------ carregamento de arquivos
-rep('["shaman",128,128,"pack"]];', '["shaman",128,128,"pack"],["pirate",128,128,"pack"]];')
+rep('["shaman",128,128,"pack"]];', '["shaman",128,128,"pack"],["pirate",128,128,"hd"]];')
 rep('this.load.spritesheet("druid-eagle","assets/pixel-art/characters/druid-eagle.png",{frameWidth:48,frameHeight:48});',
     'this.load.spritesheet("druid-eagle","assets/pixel-art/characters/druid-eagle.png",{frameWidth:48,frameHeight:48});'
     'this.load.spritesheet("pirate-parrot","assets/pixel-art/characters/pirate-parrot.png",{frameWidth:48,frameHeight:48});'
@@ -168,6 +168,13 @@ rep('this.bodyW=24,this.bodyH=44,', 'this.bodyW=Math.round(24*(this.layout.hiRes
 rep('this.por2.setTexture(p2Key,0);this.por2.setCrop(53,52,22,22).setScale(2).setOrigin(64/128,63/128);',
     'const __J2=this.s.cache.json.get(p2Key+"-layout"),__c2=__J2?.portrait??[53,52,22,22];this.por2.setTexture(p2Key,0);'
     'this.por2.setCrop(__c2[0],__c2[1],__c2[2],__c2[3]).setScale(44/__c2[2]).setOrigin((__c2[0]+__c2[2]/2)/128,(__c2[1]+__c2[3]/2)/128);')
+
+# ------------------------------------------------------------------ painel da seleção de classe
+# O commit "revert: remover completamente o modo coop" (8/10) apagou junto o trecho
+# que preenche o painel da direita (história, características, atributos e
+# habilidades). Restaurado a partir da versão anterior ao coop.
+DETAILS = open(os.path.join(ROOT, "scripts", "source", "class-select-details.js"), encoding="utf-8").read()
+rep('else h.setVisible(!1)}\nthis.redraw()}__foot(){', 'else h.setVisible(!1)}' + DETAILS + 'this.redraw()}__foot(){')
 
 open(BUNDLE, "w", encoding="utf-8").write(s)
 if os.path.isdir(os.path.dirname(MIRROR)):

@@ -1,4 +1,4 @@
-const CACHE = "ded-web-v4.9.0-capitao-scarpa-hires";
+const CACHE = "ded-web-v4.10.0-capitao-scarpa-hd";
 
 self.addEventListener("install", () => self.skipWaiting());
 
@@ -20,8 +20,11 @@ self.addEventListener("fetch", (e) => {
   if (new URL(req.url).pathname.includes("/api/") || new URL(req.url).pathname.endsWith("online-config.json")) return;
   const isDynamic = req.mode === "navigate" || new URL(req.url).pathname.endsWith("/index.html") || new URL(req.url).pathname.includes("index-") || new URL(req.url).pathname.includes("network-coop") || new URL(req.url).pathname.includes("user-auth");
   if (isDynamic) {
+    // Página principal e scripts: sempre da rede (cópia guardada só se estiver offline).
+    // Atenção: um pedido de navegação não pode ser repassado com opções extras —
+    // fetch(req, {...}) falha e caía na cópia antiga para sempre. Por isso usamos a URL.
     e.respondWith(
-      fetch(req, { cache: "no-cache" })
+      fetch(req.url, { cache: "no-cache", credentials: "same-origin" })
         .then((res) => {
           const copy = res.clone();
           caches.open(CACHE).then((c) => c.put(req, copy));

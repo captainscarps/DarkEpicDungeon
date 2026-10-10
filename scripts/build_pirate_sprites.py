@@ -155,10 +155,14 @@ for d in OUT_DIRS:
     if not os.path.isdir(os.path.dirname(d)):
         continue
     os.makedirs(d, exist_ok=True)
-    for name in ["pirate-pack-body.png"] + [f"pirate-pack-t{t}-body.png" for t in range(5)]:
+    # nome "hd" (e não "pack") para o cache offline do jogo não servir a versão antiga
+    for name in ["pirate-hd-body.png"] + [f"pirate-hd-t{t}-body.png" for t in range(5)]:
         open(os.path.join(d, name), "wb").write(png)
-    json.dump(layout, open(os.path.join(d, "pirate-pack.json"), "w"), separators=(",", ":"))
-print("OK pirate-pack-body.png", sheet.shape, len(png), "bytes; retrato", portrait)
+    json.dump(layout, open(os.path.join(d, "pirate-hd.json"), "w"), separators=(",", ":"))
+    for old in ["pirate-pack-body.png", "pirate-pack.json"] + [f"pirate-pack-t{t}-body.png" for t in range(5)]:
+        if os.path.exists(os.path.join(d, old)):
+            os.remove(os.path.join(d, old))
+print("OK pirate-hd-body.png", sheet.shape, len(png), "bytes; retrato", portrait)
 
 if PREVIEW:  # prévia ampliada 2x de todos os quadros, em 3 linhas
     per = 13
