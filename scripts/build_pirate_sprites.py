@@ -4,11 +4,15 @@ Entrada : scripts/source/capitao-scarpa-folha.png  (folha com fundo marrom esfum
 Saída   : assets/pixel-art/characters/pirate-pack*.png + pirate-pack.json
           (39 quadros de 128x128, mesmo mapa de animações do berserker-pack.json)
 
-Passos: estima o fundo liso e recorta cada figura, reduz para ~68 px de altura
-(a altura dos outros heróis), aplica uma paleta única para todos os quadros,
-contorno escuro de 1 px e alinha os pés na linha footY.
+Fidelidade à arte enviada:
+- o personagem fica com ~98 px de altura no quadro e o jogo o desenha com
+  escala 0.5 ("hiRes"), ou seja, praticamente 1 pixel da textura por pixel de tela.
+  (os outros heróis têm ~70 px com escala 0.7 — mesmo tamanho final na tela);
+- as cores são as da folha original: sem redução de paleta, sem contraste extra
+  e sem contorno adicionado (o desenho já tem o próprio contorno);
+- o recorte tira 1 px da borda para não carregar o marrom do fundo.
 
-Uso:  python scripts/build_pirate_sprites.py
+Uso:  python scripts/build_pirate_sprites.py [previa.png]
 """
 import json
 import os
@@ -25,10 +29,9 @@ OUT_DIRS = [os.path.join(ROOT, "assets", "pixel-art", "characters"),
 PREVIEW = sys.argv[1] if len(sys.argv) > 1 else None
 
 FW = FH = 128
-FOOT = 118
-STAND_H = 70          # altura em pé (px) — heróis do jogo têm 66–72
-PALETTE_SIZE = 40
-OUTLINE = (14, 9, 8)
+FOOT = 123            # linha dos pés no quadro
+STAND_H = 98          # altura em pé na textura (≈ 70 px × 0.7 / 0.5 dos outros heróis)
+GAME_SCALE = 0.5
 
 # ---------------------------------------------------------------- recorte
 img = cv2.cvtColor(cv2.imread(SRC, cv2.IMREAD_UNCHANGED)[:, :, :3], cv2.COLOR_BGR2RGB).astype(np.float32)
@@ -62,8 +65,9 @@ for s in small:  # pedaços soltos (barra do casaco, ponta do sabre) voltam para
     if s["area"] < 15:
         continue
     cx, cy = (s["x0"] + s["x1"]) / 2, (s["y0"] + s["y1"]) / 2
-    best = min(big, key=lambda b: np.hypot(max(b["x0"] - cx, 0, cx - b["x1"]), max(b["y0"] - cy, 0, cy - b["y1"])))
-    if np.hypot(max(best["x0"] - cx, 0, cx - best["x1"]), max(best["y0"] - cy, 0, cy - best["y1"])) < 14:
+    dist = lambda b: np.hypot(max(b["x0"] - cx, 0, cx - b["x1"]), max(b["y0"] - cy, 0, cy - b["y1"]))
+    best = min(big, key=dist)
+    if dist(best) < 14:
         lab[lab == s["id"]] = best["id"]
         best.update(x0=min(best["x0"], s["x0"]), x1=max(best["x1"], s["x1"]),
                     y0=min(best["y0"], s["y0"]), y1=max(best["y1"], s["y1"]))
@@ -71,11 +75,12 @@ for s in small:  # pedaços soltos (barra do casaco, ponta do sabre) voltam para
 ROWS = {"idle": (0, 230), "walk": (230, 440), "run": (440, 650), "atk": (650, 860), "death": (860, 1024)}
 figs = {k: sorted([f for f in big if a <= (f["y0"] + f["y1"]) / 2 < b], key=lambda f: f["x0"]) for k, (a, b) in ROWS.items()}
 
-# a linha "parado" foi desenhada maior que as outras na folha
+# a folha desenhou a linha "parado" um pouco maior e a linha "morrendo" um pouco menor
 SCALE = {"idle": STAND_H / 182, "walk": STAND_H / 164, "run": STAND_H / 164, "atk": STAND_H / 164, "death": STAND_H / 148}
 
 # ---------------------------------------------------------------- mapa de quadros
-# (linha, índice da figura na linha) na ordem do berserker-pack.json
+# (linha, índice da figura na linha) na ordem do berserker-pack.json.
+# Linha "parado": 0-4, 6, 7 e 9 de lado; 5 três-quartos de costas; 8 de costas.
 F = [
     ("idle", 0), ("idle", 1), ("idle", 2), ("idle", 3),                  # 0-3 idle
     ("idle", 4), ("idle", 6),                                            # 4-5 idlevar
@@ -88,73 +93,62 @@ F = [
     ("run", 0), ("run", 5),                                              # 29 dashA 30 dash
     ("atk", 1), ("atk", 5), ("atk", 2),                                  # 31 castA 32 cast 33 castC
     ("death", 3), ("death", 5), ("death", 8),                            # 34-36 death
-    ("death", 2), ("death", 0),                                          # 37-38 levantando
+    ("idle", 8), ("idle", 8),                                            # 37-38 upA/upB: parado olhando para cima (de costas)
 ]
 
 
 def shrink(f, s):
-    """Recorta a figura e reduz com média de área em alfa pré-multiplicado."""
-    x0, x1, y0, y1 = f["x0"], f["x1"], f["y0"], f["y1"]
-    m = (lab[y0:y1, x0:x1] == f["id"]).astype(np.float32)
+    """Recorta a figura (sem 1 px da borda) e reduz com média de área em alfa pré-multiplicado."""
+    pad = 2
+    x0, x1, y0, y1 = f["x0"] - pad, f["x1"] + pad, f["y0"] - pad, f["y1"] + pad
+    m = lab[y0:y1, x0:x1] == f["id"]
+    m = ndi.binary_erosion(m, iterations=1, border_value=0)
+    m = m.astype(np.float32)
     rgb = img[y0:y1, x0:x1] / 255.0
     ow, oh = max(1, round((x1 - x0) * s)), max(1, round((y1 - y0) * s))
     a = cv2.resize(m, (ow, oh), interpolation=cv2.INTER_AREA)
     c = cv2.resize(rgb * m[..., None], (ow, oh), interpolation=cv2.INTER_AREA) / np.maximum(a[..., None], 1e-4)
-    return c, a
-
-
-def grade(c):
-    """A folha é escura e lavada; os heróis do jogo têm leitura mais forte."""
-    c = np.clip(c, 0, 1)
-    lum = (0.3 * c[..., 0] + 0.59 * c[..., 1] + 0.11 * c[..., 2])[..., None]
-    c = lum + (c - lum) * 1.18                       # saturação
-    c = np.clip((c - 0.5) * 1.12 + 0.5 + 0.05, 0, 1)  # contraste + leve brilho
-    blur = cv2.GaussianBlur(c, (0, 0), 0.8)
-    return np.clip(c + (c - blur) * 0.9, 0, 1)        # nitidez
+    return np.clip(c, 0, 1), a
 
 
 frames = []
 for row, idx in F:
-    f = figs[row][idx]
-    c, a = shrink(f, SCALE[row])
-    c = grade(c)
+    c, a = shrink(figs[row][idx], SCALE[row])
+    # nitidez leve só para compensar o borrão da redução (cores preservadas)
+    blur = cv2.GaussianBlur(c, (0, 0), 0.7)
+    c = np.clip(c + (c - blur) * 0.45, 0, 1)
     frames.append((c, a > 0.5))
-
-# paleta única (k-means) para todos os quadros — cores consistentes entre animações
-px = np.concatenate([c[m] for c, m in frames]).astype(np.float32)
-crit = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 60, 0.2)
-_, _, pal = cv2.kmeans(px, PALETTE_SIZE, None, crit, 4, cv2.KMEANS_PP_CENTERS)
-
-
-def quantize(c):
-    d = ((c[..., None, :] - pal[None, None]) ** 2).sum(-1)
-    return pal[d.argmin(-1)]
-
 
 sheet = np.zeros((FH, FW * len(F), 4), np.uint8)
 for i, (c, m) in enumerate(frames):
-    q = (quantize(c) * 255).round().astype(np.uint8)
-    oh, ow = m.shape
+    q = (c * 255).round().astype(np.uint8)
     ys, xs = np.nonzero(m)
-    # âncora horizontal: centro do tronco (média das colunas na metade de cima da figura)
+    # âncora horizontal: centro do tronco (metade de cima da figura) — o sabre não desloca o corpo
     top = ys < (ys.min() + ys.max()) / 2
     cx = xs[top].mean() if top.any() else xs.mean()
-    offx = int(round(64 - cx))
-    offy = FOOT - ys.max()
+    offx, offy = int(round(64 - cx)), FOOT - ys.max()
+    tx, ty = xs + offx, ys + offy
+    ok = (tx >= 0) & (tx < FW) & (ty >= 0) & (ty < FH)
+    lost = int((~ok).sum())
+    if lost:
+        print(f"aviso: quadro {i} perdeu {lost} px fora do quadro")
     tile = np.zeros((FH, FW, 4), np.uint8)
-    for y, x in zip(ys, xs):
-        tx, ty = x + offx, y + offy
-        if 0 <= tx < FW and 0 <= ty < FH:
-            tile[ty, tx, :3] = q[y, x]
-            tile[ty, tx, 3] = 255
-    solid = tile[..., 3] == 255
-    ring = ndi.binary_dilation(solid, structure=[[0, 1, 0], [1, 1, 1], [0, 1, 0]]) & ~solid
-    tile[ring] = (*OUTLINE, 255)
+    tile[ty[ok], tx[ok], :3] = q[ys[ok], xs[ok]]
+    tile[ty[ok], tx[ok], 3] = 255
     sheet[:, i * FW:(i + 1) * FW] = tile
 
+# retrato do HUD: quadrado centrado no rosto do quadro 0
+t0 = sheet[:, :FW, 3] > 0
+ys, xs = np.nonzero(t0)
+top = int(ys.min())
+head = ys < top + 22
+fx = int(round(xs[head].mean()))
+P = 30
+portrait = [fx - P // 2 + 1, max(0, top - 1), P, P]
+
 layout = json.load(open(os.path.join(OUT_DIRS[0], "berserker-pack.json"), encoding="utf-8"))
-layout.update(scale=0.7, footY=FOOT, bakedWeapon=True,
-              anchors=[[76, 80]] * len(F), torso=[[64, 84]] * len(F), head=[[64, 58]] * len(F))
+layout.update(scale=GAME_SCALE, hiRes=True, footY=FOOT, bakedWeapon=True, portrait=portrait,
+              anchors=[[80, 76]] * len(F), torso=[[64, 80]] * len(F), head=[[64, top + 12]] * len(F))
 
 png = cv2.imencode(".png", cv2.cvtColor(sheet, cv2.COLOR_RGBA2BGRA))[1].tobytes()
 for d in OUT_DIRS:
@@ -164,16 +158,12 @@ for d in OUT_DIRS:
     for name in ["pirate-pack-body.png"] + [f"pirate-pack-t{t}-body.png" for t in range(5)]:
         open(os.path.join(d, name), "wb").write(png)
     json.dump(layout, open(os.path.join(d, "pirate-pack.json"), "w"), separators=(",", ":"))
-print("OK pirate-pack-body.png", sheet.shape, len(png), "bytes")
+print("OK pirate-pack-body.png", sheet.shape, len(png), "bytes; retrato", portrait)
 
-if PREVIEW:  # prévia ampliada 3x de todos os quadros, em 3 linhas
+if PREVIEW:  # prévia ampliada 2x de todos os quadros, em 3 linhas
     per = 13
-    rows = [sheet[:, r * per * FW:(r + 1) * per * FW] for r in range(3)]
-    pv = np.concatenate(rows, 0)
-    bgc = np.zeros_like(pv)
-    bgc[..., :3] = (38, 32, 36)
-    bgc[..., 3] = 255
+    pv = np.concatenate([sheet[:, r * per * FW:(r + 1) * per * FW] for r in range(3)], 0)
     al = pv[..., 3:4] / 255.0
-    out = (pv[..., :3] * al + bgc[..., :3] * (1 - al)).astype(np.uint8)
-    out = cv2.resize(out, None, fx=3, fy=3, interpolation=cv2.INTER_NEAREST)
+    out = (pv[..., :3] * al + np.array([38, 32, 36]) * (1 - al)).astype(np.uint8)
+    out = cv2.resize(out, None, fx=2, fy=2, interpolation=cv2.INTER_NEAREST)
     cv2.imwrite(PREVIEW, cv2.cvtColor(out, cv2.COLOR_RGB2BGR))

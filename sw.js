@@ -1,4 +1,4 @@
-const CACHE = "ded-web-v4.8.0-capitao-scarpa";
+const CACHE = "ded-web-v4.9.0-capitao-scarpa-hires";
 
 self.addEventListener("install", () => self.skipWaiting());
 

@@ -153,6 +153,22 @@ rep('"desc.BERSERKER":"Katana|Cortes precisos|Espírito",', '"desc.BERSERKER":"K
 rep('"desc.BERSERKER":"Katana|Precise cuts|Spirit",', '"desc.BERSERKER":"Katana|Precise cuts|Spirit","desc.PIRATE":"Cutlass and anchor|Rising fury|Parrot companion",')
 rep('"desc.BERSERKER":"Katana|Cortes precisos|Espíritu",', '"desc.BERSERKER":"Katana|Cortes precisos|Espíritu","desc.PIRATE":"Sable y ancla|Furia creciente|Loro compañero",')
 
+# ------------------------------------------------------------------ sprites "hiRes"
+# O pirata é desenhado em resolução maior (layout.hiRes, escala 0.5). Os pontos abaixo
+# usavam tamanho fixo pensado para escala 0.7; com hiRes eles compensam. Sem hiRes
+# (todos os outros heróis) o resultado é idêntico ao de antes.
+rep('h.setTexture(d,0).setVisible(!0).setOrigin(.5,(J?.footY??119)/128)',
+    'h.setTexture(d,0).setVisible(!0).setOrigin(.5,(J?.footY??119)/128).setScale(2*(J?.hiRes?J.scale/.7:1))')
+rep('this.por.setTexture(key,0);this.por.setCrop(53,52,22,22).setScale(2).setOrigin(64/128,63/128).setPosition(35,35)',
+    'const __J=this.s.cache.json.get(key+"-layout"),__c=__J?.portrait??[53,52,22,22];this.por.setTexture(key,0);'
+    'this.por.setCrop(__c[0],__c[1],__c[2],__c[3]).setScale(44/__c[2]).setOrigin((__c[0]+__c[2]/2)/128,(__c[1]+__c[3]/2)/128).setPosition(35,35)')
+rep('.setOrigin(.5,(J?.footY??119)/128).setScale(1.1);', '.setOrigin(.5,(J?.footY??119)/128).setScale(1.1*(J?.hiRes?J.scale/.7:1));')
+rep('i.hero=i.add.sprite(t/2-30,252,r).setScale(1.3)', 'i.hero=i.add.sprite(t/2-30,252,r).setScale(1.3*(i.heroLayout?.hiRes?i.heroLayout.scale/.7:1))')
+rep('this.bodyW=24,this.bodyH=44,', 'this.bodyW=Math.round(24*(this.layout.hiRes?.7/this.layout.scale:1)),this.bodyH=Math.round(44*(this.layout.hiRes?.7/this.layout.scale:1)),')
+rep('this.por2.setTexture(p2Key,0);this.por2.setCrop(53,52,22,22).setScale(2).setOrigin(64/128,63/128);',
+    'const __J2=this.s.cache.json.get(p2Key+"-layout"),__c2=__J2?.portrait??[53,52,22,22];this.por2.setTexture(p2Key,0);'
+    'this.por2.setCrop(__c2[0],__c2[1],__c2[2],__c2[3]).setScale(44/__c2[2]).setOrigin((__c2[0]+__c2[2]/2)/128,(__c2[1]+__c2[3]/2)/128);')
+
 open(BUNDLE, "w", encoding="utf-8").write(s)
 if os.path.isdir(os.path.dirname(MIRROR)):
     shutil.copyfile(BUNDLE, MIRROR)
