@@ -77,10 +77,57 @@ for s in small:  # pedaços soltos (barra do casaco, ponta do sabre) voltam para
 
 ROWS = {"idle": (0, 235), "walk": (235, 440), "run": (440, 645), "atk": (645, 850), "death": (850, 1024)}
 figs = {k: sorted([f for f in big if a <= (f["y0"] + f["y1"]) / 2 < b], key=lambda f: f["x0"]) for k, (a, b) in ROWS.items()}
+for _fs in figs.values():
+    for _f in _fs:
+        _f["src"] = (img, lab)
+
+
+def segment_walkrun(path):
+    """Folha de andar/correr (2 linhas x 8 quadros, fundo escuro com brilho avermelhado).
+
+    Botas e calças escuras quase somem no fundo: limiar baixo ligado às partes fortes
+    da figura, aceitando só pixels mais escuros ou mais saturados que o fundo.
+    """
+    from skimage.filters import apply_hysteresis_threshold
+    im = cv2.cvtColor(cv2.imread(path, cv2.IMREAD_UNCHANGED)[:, :, :3], cv2.COLOR_BGR2RGB).astype(np.float32)
+    fg = np.zeros(im.shape[:2], bool)
+    for _ in range(4):
+        w = (~fg).astype(np.float32)
+        bgi = cv2.GaussianBlur(im * w[..., None], (0, 0), 18) / (cv2.GaussianBlur(w, (0, 0), 18)[..., None] + 1e-4)
+        fg = ndi.binary_dilation(ndi.binary_opening(np.sqrt(((im - bgi) ** 2).sum(2)) > 22), iterations=2)
+    df = np.sqrt(((im - bgi) ** 2).sum(2))
+    weak = (df > 11) & ((im.mean(2) < bgi.mean(2) - 6) | (im.max(2) - im.min(2) > bgi.max(2) - bgi.min(2) + 18))
+    mk = apply_hysteresis_threshold(np.where(weak | (df > 27), df, 0), 11, 27)
+    mk = ndi.binary_opening(ndi.binary_fill_holes(ndi.binary_closing(mk, iterations=2)), iterations=1)
+    lb, _ = ndi.label(mk)
+    bigs, smalls = [], []
+    for i, sl in enumerate(ndi.find_objects(lb)):
+        area = int((lb[sl] == i + 1).sum())
+        f = dict(id=i + 1, x0=sl[1].start, x1=sl[1].stop, y0=sl[0].start, y1=sl[0].stop, area=area, src=(im, lb))
+        (bigs if area > 2500 else smalls).append(f)
+    for sm in smalls:
+        if sm["area"] < 15:
+            continue
+        cx, cy = (sm["x0"] + sm["x1"]) / 2, (sm["y0"] + sm["y1"]) / 2
+        dist = lambda bb: np.hypot(max(bb["x0"] - cx, 0, cx - bb["x1"]), max(bb["y0"] - cy, 0, cy - bb["y1"]))
+        best = min(bigs, key=dist)
+        if dist(best) < 14:
+            lb[lb == sm["id"]] = best["id"]
+            best.update(x0=min(best["x0"], sm["x0"]), x1=max(best["x1"], sm["x1"]),
+                        y0=min(best["y0"], sm["y0"]), y1=max(best["y1"], sm["y1"]))
+    mid = im.shape[0] * 0.55
+    return {"walk2": sorted([f for f in bigs if (f["y0"] + f["y1"]) / 2 < mid], key=lambda f: f["x0"]),
+            "run2": sorted([f for f in bigs if (f["y0"] + f["y1"]) / 2 >= mid], key=lambda f: f["x0"])}
+
+
+WALKRUN_SRC = os.path.join(ROOT, "scripts", "source", "capitao-scarpa-andar-correr.png")
+figs.update(segment_walkrun(WALKRUN_SRC))
 
 # a folha v2 desenha todas as linhas na mesma escala: uma escala só para todas as animações
 # (o personagem em pé mede ~177 px na folha → STAND_H no jogo)
 SCALE = {k: STAND_H / 177 for k in ("idle", "walk", "run", "atk", "death")}
+# folha de andar/correr (scripts/source/capitao-scarpa-andar-correr.png): pirata com ~282 px
+SCALE.update(walk2=STAND_H / 282, run2=STAND_H / 282)
 
 # ---------------------------------------------------------------- animações
 # Folha v2 (scripts/source/capitao-scarpa-folha-v2.png): todas as poses de lado e o
@@ -88,10 +135,10 @@ SCALE = {k: STAND_H / 177 for k in ("idle", "walk", "run", "atk", "death")}
 # (a corrida sobe e desce de verdade); "feet" encosta cada quadro no chão (a queda).
 ANIMS = {
     "idle":   dict(src=[("idle", i) for i in range(8)], v="row", h="torso", fps=6, loop=True),
-    # andando e correndo: os próprios quadros da folha, na ordem desenhada (ciclo do artista),
-    # alinhados pelo quadril e mantendo o sobe-e-desce natural de cada linha
-    "walk":   dict(src=[("walk", i) for i in range(8)], v="row", h="hip", fps=10, loop=True),
-    "run":    dict(src=[("run", i) for i in range(7)], v="row", h="hip", fps=12, loop=True),
+    # andando e correndo: folha própria com as pernas alternando (8 + 8 quadros), na ordem
+    # desenhada, alinhados pelo quadril e mantendo o sobe-e-desce de cada linha
+    "walk":   dict(src=[("walk2", i) for i in range(8)], v="row", h="hip", fps=10, loop=True),
+    "run":    dict(src=[("run2", i) for i in range(8)], v="row", h="hip", fps=12, loop=True),
     "attack": dict(src=[("atk", i) for i in range(9)], v="row", h="torso", fps=13, loop=False),
     "death":  dict(src=[("death", i) for i in range(8)], v="feet", h="bbox", fps=9, loop=False),
 }
@@ -103,10 +150,11 @@ def shrink(f, s):
     """Recorta a figura (sem 1 px da borda) e reduz com média de área em alfa pré-multiplicado."""
     pad = 2
     x0, x1, y0, y1 = f["x0"] - pad, f["x1"] + pad, f["y0"] - pad, f["y1"] + pad
-    m = lab[y0:y1, x0:x1] == f["id"]
+    simg, slab = f["src"]
+    m = slab[y0:y1, x0:x1] == f["id"]
     m = ndi.binary_erosion(m, iterations=1, border_value=0)
     m = m.astype(np.float32)
-    rgb = img[y0:y1, x0:x1] / 255.0
+    rgb = simg[y0:y1, x0:x1] / 255.0
     ow, oh = max(1, round((x1 - x0) * s)), max(1, round((y1 - y0) * s))
     a = cv2.resize(m, (ow, oh), interpolation=cv2.INTER_AREA)
     c = cv2.resize(rgb * m[..., None], (ow, oh), interpolation=cv2.INTER_AREA) / np.maximum(a[..., None], 1e-4)
@@ -217,7 +265,7 @@ layout = {"frameW": FW, "frameH": FH, "scale": GAME_SCALE, "hiRes": True, "footY
           "portrait": portrait, "fps": {k: ANIMS[k]["fps"] for k in ANIMS if ANIMS[k]["fps"]} | {"idlevar": 3},
           "anchors": [[80, 76]] * n, "torso": [[64, 80]] * n, "head": [[64, top + 12]] * n, "map": amap}
 
-KEY = "pirate-hd7"           # nome novo a cada mudança grande: o cache offline do jogo não serve a versão velha
+KEY = "pirate-hd8"           # nome novo a cada mudança grande: o cache offline do jogo não serve a versão velha
 png = cv2.imencode(".png", cv2.cvtColor(sheet, cv2.COLOR_RGBA2BGRA))[1].tobytes()
 for d in OUT_DIRS:
     if not os.path.isdir(os.path.dirname(d)):
@@ -226,8 +274,8 @@ for d in OUT_DIRS:
     for name in [f"{KEY}-body.png"] + [f"{KEY}-t{t}-body.png" for t in range(5)]:
         open(os.path.join(d, name), "wb").write(png)
     json.dump(layout, open(os.path.join(d, f"{KEY}.json"), "w"), separators=(",", ":"))
-    for old in [f"pirate-{k}{e}" for k in ("pack", "hd", "hd2", "hd3", "hd4", "hd5", "hd6") for e in ("-body.png", ".json")] + \
-               [f"pirate-{k}-t{t}-body.png" for k in ("pack", "hd", "hd2", "hd3", "hd4", "hd5", "hd6") for t in range(5)]:
+    for old in [f"pirate-{k}{e}" for k in ("pack", "hd", "hd2", "hd3", "hd4", "hd5", "hd6", "hd7") for e in ("-body.png", ".json")] + \
+               [f"pirate-{k}-t{t}-body.png" for k in ("pack", "hd", "hd2", "hd3", "hd4", "hd5", "hd6", "hd7") for t in range(5)]:
         if os.path.exists(os.path.join(d, old)):
             os.remove(os.path.join(d, old))
 json.dump({"cell": [FW, FH], "scale": GAME_SCALE, "footY": FOOT,
