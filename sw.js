@@ -1,4 +1,4 @@
-const CACHE = "ded-web-v4.7.0-armor-tiers-test";
+const CACHE = "ded-web-v4.8.0-capitao-scarpa";
 
 self.addEventListener("install", () => self.skipWaiting());
 

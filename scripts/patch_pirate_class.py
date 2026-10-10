@@ -1,0 +1,159 @@
+"""Adiciona o Capitão Scarpa (classe PIRATE, um Berserker pirata) ao bundle do jogo.
+
+O projeto só tem o bundle compilado (assets/index-*.js), então cada mudança é uma
+troca de texto que precisa casar exatamente uma vez. Se já foi aplicada, pula.
+
+Uso:  python scripts/patch_pirate_class.py
+"""
+import os
+import shutil
+import sys
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BUNDLE = os.path.join(ROOT, "assets", "index-D6qIWtA7-p209.js")
+MIRROR = os.path.join(ROOT, "Projeto atualizado", "assets", "index-D6qIWtA7-p209.js")
+
+s = open(BUNDLE, encoding="utf-8").read()
+MARK = 'PIRATE:{id:"PIRATE"'
+if MARK in s:
+    print("já aplicado — nada a fazer")
+    sys.exit(0)
+
+
+def rep(old, new, count=1):
+    global s
+    n = s.count(old)
+    if n != count:
+        raise SystemExit(f"esperava {count} ocorrência(s), achei {n}: {old[:90]!r}")
+    s = s.replace(old, new)
+
+
+# ------------------------------------------------------------------ classe
+PIRATE_DEF = (
+    'PIRATE:{id:"PIRATE",name:"Berserker",texture:"player-pirate",'
+    'tagline:"Capitão pirata e berserker: crava a âncora, solta o papagaio e desperta a ira do Kraken.",'
+    'desc:["Sabre e âncora","Fúria crescente","Papagaio companheiro"],attackType:"melee",'
+    'baseStats:{maxHp:8,damage:3,magicDamage:0,defense:1,speed:162,critChance:8,critMult:1.7,attackSpeed:1},'
+    'levelBonus:{maxHp:1.9,damage:.7,defense:.25,speed:0,critChance:.4,magicDamage:0,maxResource:0},'
+    'resource:{type:"fury",name:"Fúria",max:100,regen:-5,color:14702138},'
+    'abilities:["FURIA_PIRATA","FRENZY","COMPANHEIRO_VOADOR"]},'
+)
+rep('abilities:["IAIJUTSU","KIAI","KAZE_GIRI"]},', 'abilities:["IAIJUTSU","KIAI","KAZE_GIRI"]},' + PIRATE_DEF)
+
+# árvore de habilidades: Fúria Pirata primeiro, habilidades clássicas do Berserker no meio, Kraken no fim
+rep('15:["KAISHAKU"]},',
+    '15:["KAISHAKU"]},PIRATE:{1:["FURIA_PIRATA"],5:["FRENZY","COMPANHEIRO_VOADOR"],10:["DEMOLISHING_BLOW","BLOODLUST"],15:["IRA_KRAKEN"]},')
+
+# habilidades novas (mesmo bloco onde o Xamã registra as dele)
+ABILITIES = (
+    'FURIA_PIRATA:{id:"FURIA_PIRATA",name:"Fúria Pirata",'
+    'desc:"Salta e crava uma âncora gigante no chão: dano massivo em área e atordoa os inimigos próximos por 2s.",'
+    'icon:"icon-demolish",type:"anchor-slam",damageType:"physical",cost:25,cooldown:8,damageMult:3,radius:90,'
+    'stun:2,knockbackMult:.8,color:9080698,tint:9080698,sound:"sfx-warrior-heavy-strike"},'
+    'COMPANHEIRO_VOADOR:{...Ye.EAGLE_COMPANION,id:"COMPANHEIRO_VOADOR",name:"Companheiro Voador",'
+    'desc:"Solta o papagaio do capitão por 30s: ele voa pela sala e traz itens, poções e ouro para você.",'
+    'cost:20,texture:"pirate-parrot",label:"Papagaio!",color:14692906},'
+    'IRA_KRAKEN:{id:"IRA_KRAKEN",name:"Ira do Kraken",'
+    'desc:"Fúria total por 10s: imune a controle (atordoamento, lentidão e empurrões), +50% de dano, '
+    'e cada ataque invoca tentáculos fantasmagóricos que esmagam os inimigos.",'
+    'icon:"icon-bloodlust",type:"kraken",cost:60,cooldown:30,duration:10,damageBonus:.5,tentacleMult:.9,'
+    'tentacleRange:150,color:3002312,tint:10475744,sound:"sfx-warrior-whirlwind"},'
+)
+rep('Object.assign(Ye,{RAIZES_JUREMA:', 'Object.assign(Ye,{' + ABILITIES + 'RAIZES_JUREMA:')
+
+# ------------------------------------------------------------------ atordoamento
+rep('SLOW:{key:"SLOW",name:"Lentidão",color:10137804,speedMult:.7,maxDuration:4,text:"LENTO"}}',
+    'SLOW:{key:"SLOW",name:"Lentidão",color:10137804,speedMult:.7,maxDuration:4,text:"LENTO"},'
+    'STUN:{key:"STUN",name:"Atordoamento",color:16770650,speedMult:.01,maxDuration:3,text:"ATORDOADO"}}')
+# Ira do Kraken: o jogador fica imune a qualquer status negativo
+rep('apply(i,t,{duration:e=3,power:d=1}={}){const o=ai[t];if(!o||!i||i.dead)return;',
+    'apply(i,t,{duration:e=3,power:d=1}={}){const o=ai[t];if(!o||!i||i.dead)return;'
+    'if(i===this.scene.player&&this.scene.__krakenUntil>this.scene.time.now)return;')
+# inimigo comum atordoado: para de pensar e de andar
+rep('this.ai.update(i,t),this.knock.x!==0',
+    '(this.statuses?.STUN?.t>0?this.setVelocity(0,0):this.ai.update(i,t)),this.knock.x!==0')
+# chefe atordoado (o tempo já é cortado pela metade em chefes)
+rep('this.state_){case"idle":this.setVelocity(0,0),t.dead||(this.state_="chase");break;',
+    '(this.statuses?.STUN?.t>0&&this.state_==="chase"?"__stun":this.state_)){case"__stun":this.setVelocity(0,0);break;'
+    'case"idle":this.setVelocity(0,0),t.dead||(this.state_="chase");break;')
+# Kraken: sem empurrão ao levar dano
+rep('this.scene.resource.gain(12),t&&(this.knock.x=t.x*this.data_.hitKnockback',
+    'this.scene.resource.gain(12),t&&!(this.scene.__krakenUntil>this.scene.time.now)&&(this.knock.x=t.x*this.data_.hitKnockback')
+
+# ------------------------------------------------------------------ execução das habilidades
+rep('case"eagle":return this.execEagle(i);',
+    'case"eagle":return this.execEagle(i);case"anchor-slam":return this.execAnchorSlam(i);case"kraken":return this.execKraken(i);')
+
+METHODS = r'''execAnchorSlam(i){const S=this.scene,p=S.player,v=S.playerVisual,fd=this.facingDir(),R=i.radius;p.invuln=Math.max(p.invuln,.55);const hop={h:0};S.tweens.add({targets:hop,h:24,duration:180,ease:"Quad.easeOut",yoyo:!0,hold:20,onUpdate:()=>{v&&(v.__hop=hop.h)},onComplete:()=>{v&&(v.__hop=0)}});v?.spawnAfterimage?.();const ax=p.x+fd.x*30,ay=p.y+8;let anc=null;S.textures.exists("pirate-anchor")&&(anc=S.add.image(ax,ay-150,"pirate-anchor").setOrigin(.5,1).setScale(1.3).setDepth(ay).setFlipX(fd.x<0),S.tweens.add({targets:anc,y:ay,duration:360,ease:"Quad.easeIn"}));S.time.delayedCall(370,()=>{if(!S.scene.isActive()||!p.active||p.dead){anc?.destroy();return}const cx=p.x+fd.x*12,cy=p.y+6;S.cameraSys.shake(.012,260),S.effects.hitStop?.(80),S.effects.shockwaveRing(cx,cy,R),S.time.delayedCall(90,()=>S.effects.shockwaveRing(cx,cy,R*.62)),S.effects.burstTinted(cx,cy,i.color,26),S.effects.burstTinted(cx,cy-6,16756810,12);const g=S.add.graphics().setDepth(cy-2);g.lineStyle(2,1381654,.9);for(let k=0;k<8;k++){const a=k/8*Math.PI*2+Math.random()*.35;let x=cx,y=cy;g.beginPath(),g.moveTo(x,y);for(let q=0;q<3;q++)x+=Math.cos(a+(Math.random()-.5)*.7)*R*.27,y+=Math.sin(a+(Math.random()-.5)*.7)*R*.15,g.lineTo(x,y);g.strokePath()}S.tweens.add({targets:g,alpha:0,delay:450,duration:650,onComplete:()=>g.destroy()});anc&&S.tweens.add({targets:anc,alpha:0,delay:380,duration:420,onComplete:()=>anc.destroy()});const{amount:am,crit:cr}=this.rollDamage(i);for(const n of S.combat.getTargets())if(S.damageSystem.circleHit(cx,cy,R,n.x,n.y,(n.body?.width??16)/2)){const d=Math.hypot(n.x-cx,n.y-cy)||1;S.damageSystem.apply({target:n,amount:am,critical:cr,type:i.damageType,dir:{x:(n.x-cx)/d,y:(n.y-cy)/d},knockbackMult:i.knockbackMult??1,status:{key:"STUN",duration:i.stun??2}}),S.effects.hitBurst?.(n.x,n.y,10)}S.audioRef?.play("sfx-warrior-heavy-strike")})}execKraken(i){const S=this.scene,p=S.player,v=S.playerVisual,ms=i.duration*1e3;S.__krakenEnd?.();S.__krakenUntil=S.time.now+ms;if(p.statuses)for(const k of Object.keys(p.statuses))delete p.statuses[k];const tot=S.stats.total;S.stats.addBuff("damage",Math.max(1,Math.round((tot.damage??1)*(i.damageBonus??.5))),i.duration);S.effects.floatText(p.x,p.y-36,"IRA DO KRAKEN!","#5ee0d0",12),S.cameraSys.shake(.008,320),S.effects.burstTinted(p.x,p.y,i.color,30),S.effects.shockwaveRing(p.x,p.y,64);const pool=S.add.ellipse(p.x,p.y+8,56,18,792617,.62),glow=S.add.image(p.x,p.y+6,"light").setBlendMode(j.BlendModes.ADD).setTint(i.color).setScale(.42,.2).setAlpha(.55),eye=S.add.image(p.x,p.y,"light").setBlendMode(j.BlendModes.ADD).setTint(9174015).setScale(.2,.26).setAlpha(0);let tt=0;const tick=S.time.addEvent({delay:16,loop:!0,callback:()=>{if(!p.active)return;tt+=16;const pu=Math.sin(S.time.now*.009);pool.setPosition(p.x,p.y+8).setDepth(p.y-3).setScale(1+pu*.06),glow.setPosition(p.x,p.y+6).setDepth(p.y-2).setAlpha(.42+pu*.14);const hy=v?.container?v.container.y-(v.__hop||0)-20:p.y-20,hx=p.x;eye.setPosition(hx,hy).setDepth(p.y-1).setAlpha(.3+Math.sin(S.time.now*.012)*.1);tt>=250&&(tt=0,v?.setTintAll?.(i.tint))}}),drops=S.time.addEvent({delay:95,loop:!0,callback:()=>{if(!p.active)return;const a=Math.random()*Math.PI*2,r=10+Math.random()*13,x=p.x+Math.cos(a)*r,y=p.y+6+Math.sin(a)*r*.4,d=S.add.rectangle(x,y,2,3,Math.random()<.5?2650538:6216400).setDepth(p.y+6).setAlpha(.9);S.tweens.add({targets:d,y:y-24-Math.random()*16,alpha:0,duration:620,onComplete:()=>d.destroy()})}});v?.setTintAll?.(i.tint),S.__krakenStrike=()=>this.krakenTentacle(i);const end=()=>{tick.remove(),drops.remove(),pool.destroy(),glow.destroy(),eye.destroy(),v?.clearTintAll?.(),S.__krakenStrike=null,S.__krakenEnd=null,S.__krakenUntil=0};S.__krakenEnd=end,S.time.delayedCall(ms,()=>{S.__krakenEnd===end&&end()})}krakenTentacle(i){const S=this.scene,p=S.player;if(!S.textures.exists("pirate-tentacle"))return;S.anims.exists("pirate-tentacle-slam")||S.anims.create({key:"pirate-tentacle-slam",frames:S.anims.generateFrameNumbers("pirate-tentacle",{start:0,end:5}),frameRate:15,repeat:0});const tg=this.nearestTarget(i.tentacleRange??150),fd=this.facingDir(),dir=tg?Math.sign(tg.x-p.x)||1:fd.x<0?-1:1,x=tg?tg.x-dir*10:p.x+fd.x*46,y=(tg?tg.y:p.y+fd.y*46)+8,sh=S.add.ellipse(x,y,22,7,792617,.6).setDepth(y-1),gl=S.add.image(x,y-2,"light").setBlendMode(j.BlendModes.ADD).setTint(i.color).setScale(.12,.06).setAlpha(.6),t=S.add.sprite(x,y,"pirate-tentacle",0).setOrigin(.35,.97).setDepth(y+1).setAlpha(.9).setFlipX(dir<0);t.play("pirate-tentacle-slam"),S.effects.burstTinted(x,y,i.color,6),S.time.delayedCall(260,()=>{if(!S.scene.isActive())return;const hx=x+dir*14,hy=y-2,{amount:am,crit:cr}=this.rollDamage({damageMult:i.tentacleMult??.9,damageType:"physical"});for(const n of S.combat.getTargets())if(S.damageSystem.circleHit(hx,hy,26,n.x,n.y,(n.body?.width??16)/2)){const d=Math.hypot(n.x-p.x,n.y-p.y)||1;S.damageSystem.apply({target:n,amount:am,critical:cr,type:"physical",dir:{x:(n.x-p.x)/d,y:(n.y-p.y)/d},knockbackMult:.6})}S.effects.burstTinted(hx,hy,9174015,10),S.cameraSys.shake(.003,80)}),t.once("animationcomplete",()=>{S.tweens.add({targets:[t,sh,gl],alpha:0,duration:220,onComplete:()=>{t.destroy(),sh.destroy(),gl.destroy()}})})}'''
+rep('execEagle(i){const t=this.scene;', METHODS + 'execEagle(i){const t=this.scene;')
+
+# papagaio reaproveita a águia, com textura, texto e cor próprios
+rep('new __Eagle(t,{lifetimeSec:i.duration,radius:i.radius,speed:i.speed})',
+    'new __Eagle(t,{lifetimeSec:i.duration,radius:i.radius,speed:i.speed,tex:i.texture,label:i.label,col:i.color})')
+rep('this.spr=g.add.sprite(p.x-18,p.y-44,"druid-eagle",0)',
+    'this.spr=g.add.sprite(p.x-18,p.y-44,c.tex&&g.textures.exists(c.tex)?c.tex:"druid-eagle",0)')
+rep('g.effects.burstTinted(this.spr.x,this.spr.y,11045458,14),g.effects.floatText(p.x,p.y-30,"Águia!","#e8c060",10)',
+    'g.effects.burstTinted(this.spr.x,this.spr.y,c.col??11045458,14),g.effects.floatText(p.x,p.y-30,c.label??"Águia!","#e8c060",10)')
+
+# salto da Fúria Pirata: o visual sobe sem mexer no corpo físico
+rep('t&&(this.container.setPosition(t.x,t.y-2),', 't&&(this.container.setPosition(t.x,t.y-2-(this.__hop||0)),')
+# tentáculos a cada ataque básico durante a Ira do Kraken
+rep('deliverAttack(i,t,e=null){', 'deliverAttack(i,t,e=null){this.scene.__krakenUntil>this.scene.time.now&&this.scene.__krakenStrike?.();')
+
+# ------------------------------------------------------------------ carregamento de arquivos
+rep('["shaman",128,128,"pack"]];', '["shaman",128,128,"pack"],["pirate",128,128,"pack"]];')
+rep('this.load.spritesheet("druid-eagle","assets/pixel-art/characters/druid-eagle.png",{frameWidth:48,frameHeight:48});',
+    'this.load.spritesheet("druid-eagle","assets/pixel-art/characters/druid-eagle.png",{frameWidth:48,frameHeight:48});'
+    'this.load.spritesheet("pirate-parrot","assets/pixel-art/characters/pirate-parrot.png",{frameWidth:48,frameHeight:48});'
+    'this.load.spritesheet("pirate-tentacle","assets/pixel-art/characters/pirate-tentacle.png",{frameWidth:40,frameHeight:64});'
+    'this.load.image("pirate-anchor","assets/pixel-art/characters/pirate-anchor.png");')
+rep('"WOLF_COMPANION"])this.load.image("ix-"+f',
+    '"WOLF_COMPANION","FURIA_PIRATA","IRA_KRAKEN","COMPANHEIRO_VOADOR"])this.load.image("ix-"+f')
+rep('"necromancer","warlock","shaman","traveler"]){const e=this.cache.json.get(',
+    '"necromancer","warlock","shaman","pirate","traveler"]){const e=this.cache.json.get(')
+rep('"necromancer","warlock","shaman"],Rl=', '"necromancer","warlock","shaman","pirate"],Rl=')
+rep('t("player-shaman",Yi),', 't("player-shaman",Yi),t("player-pirate",Wi),')
+
+# ------------------------------------------------------------------ listas e tabelas por classe
+rep('const fe=["WARRIOR","ARCHER","MAGE","ROGUE","NECROMANCER","SHAMAN","BERSERKER","HUNTER","PALADIN"];',
+    'const fe=["WARRIOR","ARCHER","MAGE","ROGUE","NECROMANCER","SHAMAN","BERSERKER","PIRATE","HUNTER","PALADIN"];')
+rep('const li=["WARRIOR","ARCHER","MAGE","ROGUE","PALADIN","SHAMAN","BERSERKER",',
+    'const li=["WARRIOR","ARCHER","MAGE","ROGUE","PALADIN","SHAMAN","BERSERKER","PIRATE",')
+rep('PALADIN:"unarmed",SHAMAN:"sword",WARLOCK:"staff"};function Xi', 'PALADIN:"unarmed",SHAMAN:"sword",PIRATE:"great_sword",WARLOCK:"staff"};function Xi')
+rep('SHAMAN:{orb:"ui-orb-leather"},BERSERKER:{orb:"ui-orb-leather"},', 'SHAMAN:{orb:"ui-orb-leather"},BERSERKER:{orb:"ui-orb-leather"},PIRATE:{orb:"ui-orb-leather"},')
+rep('SHAMAN:{mass:1.05,runLean:3.8,breathHz:1.5,footDust:!0},', 'SHAMAN:{mass:1.05,runLean:3.8,breathHz:1.5,footDust:!0},PIRATE:{mass:1.3,runLean:4.4,breathHz:1.6,footDust:!0},')
+rep('SHAMAN:"XAMÃ",WARLOCK:"BRUXO"},lr={', 'SHAMAN:"XAMÃ",PIRATE:"BERSERKER",WARLOCK:"BRUXO"},lr={PIRATE:"BERSERKER",')
+rep('vh=new Set(["BERSERKER"])', 'vh=new Set(["BERSERKER","PIRATE"])')
+rep('SHAMAN:"shaman_sword",WARLOCK:"bone_staff"};function fi', 'SHAMAN:"shaman_sword",PIRATE:"pirate_cutlass",WARLOCK:"bone_staff"};function fi')
+rep('SHAMAN:"#7ee0a0",', 'SHAMAN:"#7ee0a0",PIRATE:"#e86a50",')
+rep('const __HN={SHAMAN:"Araí",', 'const __HN={PIRATE:"Capitão Scarpa",SHAMAN:"Araí",')
+rep('else if(w==="BERSERKER"){const N=this.scene.resource;', 'else if(w==="BERSERKER"||w==="PIRATE"){const N=this.scene.resource;')
+
+# arma inicial
+rep('desc:"Lâmina sagrada consagrada aos espíritos da mata, afiada e leve."},',
+    'desc:"Lâmina sagrada consagrada aos espíritos da mata, afiada e leve."},'
+    'pirate_cutlass:{name:"Sabre do Capitão",type:"weapon",slot:"weapon",icon:"icon-great-sword",weaponCategory:"BERSERKER",'
+    'classRequirement:"PIRATE",weaponClass:"heavy",visualKey:"great_sword",stats:{damage:6},attackSpeed:.75,value:20,'
+    'desc:"Sabre curvo de abordagem. Já cortou cordas, velas e muita gente."},')
+
+# textos (pt, en, es)
+rep('"class.SHAMAN":"Xamã",', '"class.SHAMAN":"Xamã","class.PIRATE":"Berserker",')
+rep('"class.SHAMAN":"Shaman",', '"class.SHAMAN":"Shaman","class.PIRATE":"Berserker",')
+rep('"class.SHAMAN":"Chamana",', '"class.SHAMAN":"Chamana","class.PIRATE":"Berserker",')
+rep('"tag.BERSERKER":"Disciplina e aço: um corte certo vale mais que dez.",',
+    '"tag.BERSERKER":"Disciplina e aço: um corte certo vale mais que dez.",'
+    '"tag.PIRATE":"Capitão pirata e berserker: crava a âncora, solta o papagaio e desperta a ira do Kraken.",')
+rep('"tag.BERSERKER":"Discipline and steel: one true cut beats ten.",',
+    '"tag.BERSERKER":"Discipline and steel: one true cut beats ten.",'
+    '"tag.PIRATE":"Pirate captain and berserker: slams the anchor, sends the parrot and wakes the Kraken\'s wrath.",')
+rep('"tag.BERSERKER":"Disciplina y acero: un corte certero vale más que diez.",',
+    '"tag.BERSERKER":"Disciplina y acero: un corte certero vale más que diez.",'
+    '"tag.PIRATE":"Capitán pirata y berserker: clava el ancla, suelta al loro y despierta la ira del Kraken.",')
+rep('"desc.BERSERKER":"Katana|Cortes precisos|Espírito",', '"desc.BERSERKER":"Katana|Cortes precisos|Espírito","desc.PIRATE":"Sabre e âncora|Fúria crescente|Papagaio companheiro",')
+rep('"desc.BERSERKER":"Katana|Precise cuts|Spirit",', '"desc.BERSERKER":"Katana|Precise cuts|Spirit","desc.PIRATE":"Cutlass and anchor|Rising fury|Parrot companion",')
+rep('"desc.BERSERKER":"Katana|Cortes precisos|Espíritu",', '"desc.BERSERKER":"Katana|Cortes precisos|Espíritu","desc.PIRATE":"Sable y ancla|Furia creciente|Loro compañero",')
+
+open(BUNDLE, "w", encoding="utf-8").write(s)
+if os.path.isdir(os.path.dirname(MIRROR)):
+    shutil.copyfile(BUNDLE, MIRROR)
+print("OK — Capitão Scarpa adicionado ao bundle")
